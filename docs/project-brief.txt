@@ -1,0 +1,1869 @@
+# MASTER BUILD PROMPT — REVICE
+## Revive the Device | Android + Windows Multi-Device Monitoring Ecosystem
+
+### YOUR ROLE
+
+Act as a senior software architect, Flutter engineer, Kotlin Android developer, C# .NET Windows developer, backend engineer, security engineer, UI/UX designer, and QA engineer.
+
+Build a production-oriented, secure, maintainable multi-device monitoring system named **Revice**, with the official tagline:
+
+**Revive the Device**
+
+This is a real application intended for personal daily use. Do not build a website disguised as a mobile application, an incomplete UI concept, or a collection of disconnected demos.
+
+Implement working functionality using actual device APIs, secure authentication, persistent storage, and real synchronization.
+
+Use the existing repository when available. Inspect it before making changes.
+
+Work systematically, implement the project in phases, and verify each phase before moving to the next.
+
+---
+
+# 1. PRODUCT OVERVIEW
+
+Revice is a cross-device monitoring ecosystem.
+
+The user's primary device is a **POCO F7 Android smartphone**. It acts as the main dashboard for monitoring multiple Android phones and Windows computers.
+
+Additional Android devices and Windows computers run lightweight monitoring agents that collect and securely synchronize their system status.
+
+The main Android dashboard displays the latest available information for all connected devices.
+
+### Supported platforms
+
+1. Android smartphones and tablets.
+2. Windows 10/11 desktops and laptops.
+
+iOS is explicitly excluded from version 1.0.
+
+### Core monitoring features
+
+- Battery percentage.
+- Battery charging status.
+- Battery temperature when supported.
+- Battery health status when supported.
+- Battery voltage when supported.
+- Battery cycle count when supported.
+- Total storage.
+- Available storage.
+- Used storage.
+- Storage usage percentage.
+- Device information.
+- Monitoring timestamps.
+- Historical battery and storage analytics.
+- Windows CPU usage.
+- Windows RAM usage.
+- Windows drive information.
+- Windows uptime and power status.
+- Low-battery alerts.
+- Storage warnings.
+- Device monitoring status.
+- Telegram notifications.
+
+### Product principles
+
+- One Android APK supports unlimited devices in application design, subject to backend quotas.
+- One Windows application supports multiple independent PCs.
+- All devices belong to an authenticated owner.
+- A device must be explicitly paired before it can publish monitoring data.
+- The user can rename, group, inspect, and revoke devices.
+- Never display fabricated health metrics.
+- Never confuse stale information with real-time information.
+- Prioritize security, reliability, battery efficiency, and understandable UX.
+- Prefer an offline-first monitoring approach wherever appropriate.
+
+---
+
+# 2. OFFICIAL BRAND IDENTITY
+
+Application name: **Revice**
+
+Tagline: **Revive the Device**
+
+Theme: **Volt AMOLED — Tech & Performance**
+
+Dark mode only.
+
+### Official logo
+
+I will provide two reference images:
+
+1. `revice-app-icon.png` — neon R symbol with heartbeat/pulse integration.
+2. `revice-header-logo.png` — horizontal Revice branding with the R logo on the left and Revice wordmark on the right.
+
+Treat these images as the primary brand references.
+
+Do not replace them with generic icons, emoji, or randomly generated branding.
+
+Use the icon-only version for:
+
+- Android launcher icon.
+- Splash screen.
+- Windows application icon.
+- System tray.
+- Notification branding where supported.
+
+Use the horizontal version for:
+
+- Dashboard headers where space permits.
+- Login and onboarding.
+- About screen.
+- Windows Agent branding.
+
+Preserve the proportions and visual identity.
+
+Prepare optimized raster asset variants for different screen densities. Do not stretch the logos.
+
+If source images are missing, use clearly marked temporary placeholders and request the real assets. Do not invent replacements and present them as final.
+
+### Brand colors
+
+| Purpose | Hex |
+|---|---|
+| Primary AMOLED background | `#050807` |
+| Surface background | `#111914` |
+| Elevated surfaces | `#19251C` |
+| Surface borders | `#29372D` |
+| Neon lime primary | `#B9F35A` |
+| Cyan secondary | `#4EDFC3` |
+| Primary text | `#F4F8EE` |
+| Secondary text | `#93A28C` |
+| Warning | `#F59E0B` |
+| Critical | `#EF4444` |
+| Success | `#4ADE80` |
+
+Use restrained gradients combining neon lime and cyan.
+
+Never make every component glow.
+
+### Typography
+
+- Space Grotesk for important titles, statistics, numbers, and brand-oriented headings.
+- Inter for body text, navigation, settings, and explanatory text.
+- Use fallback system fonts.
+- Use tabular numerals where appropriate.
+- Maintain clear typography hierarchy and accessibility.
+
+### Design characteristics
+
+- True AMOLED-friendly black.
+- Premium dark technology aesthetic.
+- Minimal, carefully controlled glassmorphism.
+- Rounded rectangular cards.
+- Thin visible borders.
+- Subtle neon accents.
+- Large readable statistics.
+- Compact technical metadata.
+- Smooth progress indicators.
+- Circular battery visualization.
+- High-quality interactive charts.
+- Consistent spacing.
+- Subtle haptic feedback when appropriate.
+- Lightweight and accessible animations.
+
+Use Material 3 components where suitable but customize them to match Revice.
+
+Do not use a generic Flutter template appearance.
+
+---
+
+# 3. REQUIRED TECHNOLOGY STACK
+
+## Android Application
+
+- Flutter and Dart.
+- Native Kotlin integration.
+- Android BatteryManager.
+- Android storage APIs.
+- Android WorkManager for supported background tasks.
+- Firebase Authentication.
+- Firebase Realtime Database client for authorized dashboard reads.
+- SQLite through a maintained Flutter persistence solution.
+- Flutter secure storage backed by Android Keystore when available.
+- Maintainable state management such as Riverpod.
+- Suitable maintained charting library.
+
+## Windows Agent
+
+- C# with a supported stable .NET release.
+- Windows Forms for the lightweight tray interface.
+- Windows native APIs and System.IO.DriveInfo.
+- Secure HTTP client.
+- Windows DPAPI or another appropriate OS-protected credential mechanism.
+- Lightweight local configuration and bounded queue persistence.
+- Windows startup integration, only with user consent.
+
+## Backend
+
+- Firebase Realtime Database.
+- Firebase Authentication.
+- Cloudflare Workers using TypeScript.
+- Firebase Realtime Database REST API for privileged operations.
+- Telegram Bot API.
+- Cloudflare Cron Triggers.
+- HTTPS for all remote communication.
+
+Do not introduce Supabase, PostgreSQL, MongoDB, Redis, Docker, Kubernetes, or additional databases without a justified technical need.
+
+Prioritize deployment within Firebase Spark and Cloudflare Workers Free limits. Never silently enable paid services.
+
+---
+
+# 4. HIGH-LEVEL SYSTEM ARCHITECTURE
+
+Implement three primary application components and one shared backend ecosystem.
+
+### Component A — Revice Android
+
+One APK containing two operational capabilities:
+
+**Dashboard capability**
+- Display all registered devices.
+- Monitor the local Android device.
+- Inspect remote Android devices.
+- Inspect Windows computers.
+- Display history.
+- Configure notifications.
+- Manage pairing.
+- Manage devices.
+
+**Agent capability**
+- Read local Android battery and storage.
+- Create monitoring snapshots.
+- Queue readings when offline.
+- Synchronize to the backend.
+- Report the last successful sync.
+
+The same APK must support both capabilities.
+
+Do not create separate Android APKs for dashboard and agent.
+
+The POCO F7 uses the full dashboard.
+
+Other Android phones may run primarily as agents, but they should still be able to access the dashboard when signed into the authorized owner account.
+
+### Component B — Revice Windows Agent
+
+A lightweight system tray application responsible for:
+
+- Monitoring Windows system metrics.
+- Secure device pairing.
+- Periodic synchronization.
+- Connection status.
+- Local configuration.
+- Retry handling.
+- Manual sync.
+- Basic troubleshooting.
+
+Do not build a resource-heavy desktop dashboard.
+
+### Component C — Firebase
+
+Responsible for:
+
+- Authentication.
+- Registered devices.
+- Latest telemetry.
+- Historical snapshots.
+- Aggregated analytics.
+- Monitoring preferences.
+- Alert history.
+
+### Component D — Cloudflare Gateway
+
+Responsible for:
+
+- Owner authorization.
+- Agent authorization.
+- Pairing sessions.
+- Device registration.
+- Telemetry validation.
+- Privileged database writes.
+- Token management.
+- Alert evaluation.
+- Telegram communication.
+- Scheduled cleanup.
+- Stale-device detection.
+
+Cloudflare must serve as the secure intermediary for sensitive operations.
+
+---
+
+# 5. ANDROID APPLICATION SCREENS
+
+Build the following screens using the Revice Volt AMOLED design system.
+
+## Screen 1 — Splash
+
+Features:
+
+- Centered Revice symbol.
+- AMOLED black background.
+- Subtle heartbeat-inspired animation.
+- Minimal loading indicator.
+- Verify local authentication state.
+- Route to onboarding, login, or dashboard.
+
+Keep the splash fast. Respect reduced-motion accessibility settings.
+
+## Screen 2 — Onboarding
+
+Explain:
+
+1. Monitor multiple devices.
+2. View battery and storage.
+3. Receive intelligent alerts.
+4. Connect devices securely.
+
+Provide two clear actions:
+
+- Set up Revice.
+- Connect this device as an agent.
+
+Do not require repeated onboarding after setup.
+
+## Screen 3 — Authentication
+
+Implement:
+
+- Email/password login.
+- Owner registration or controlled owner initialization.
+- Email verification where configured.
+- Password reset.
+- Session restoration.
+- Logout.
+- Proper authentication errors.
+
+Support personal-use owner accounts without exposing public monitoring access.
+
+An authentication account alone must not grant access to an existing owner's devices.
+
+## Screen 4 — Home Dashboard
+
+This is the primary screen.
+
+Header:
+
+- Revice branding.
+- Small user/device status.
+- Notification icon.
+- Add Device shortcut.
+
+Summary cards:
+
+- Total registered devices.
+- Recently reporting devices.
+- Stale devices.
+- Active alerts.
+
+Display the POCO F7 device card first.
+
+Each device card should show:
+
+- Device icon.
+- Custom device name.
+- Platform.
+- Battery percentage if supported.
+- Charging state.
+- Storage usage.
+- Last updated timestamp.
+- Monitoring status.
+- Tap-to-view-details interaction.
+
+Implement optional device grouping and sorting.
+
+Available sorting:
+
+- Custom order.
+- Most recently updated.
+- Lowest battery.
+- Highest storage usage.
+- Device name.
+
+Provide loading skeletons, empty states, and error states.
+
+Do not show fake device data in production.
+
+## Screen 5 — Devices
+
+Implement a comprehensive device management page.
+
+Sections:
+
+- All Devices.
+- Android Devices.
+- Windows Devices.
+- Device Groups.
+
+Features:
+
+- Device search.
+- Add device.
+- Rename device.
+- Assign group.
+- Favorite device.
+- Device information.
+- Pairing status.
+- Revoke device access.
+- Remove inactive device.
+
+Provide confirmation dialogs for destructive actions.
+
+Device groups should support:
+
+- Main Devices.
+- Spare Phones.
+- Work Devices.
+- Windows Computers.
+- Custom groups.
+
+## Screen 6 — Android Device Details
+
+Display:
+
+- Device name and model.
+- Manufacturer.
+- Android version.
+- Battery percentage.
+- Charging/discharging.
+- Battery temperature when available.
+- Battery voltage when available.
+- Battery health status when available.
+- Battery cycle count when available.
+- Total storage.
+- Used storage.
+- Available storage.
+- Battery history.
+- Storage history.
+- Last sync.
+- Monitoring status.
+
+Battery visualization:
+
+Use a circular neon-lime indicator with a large battery percentage.
+
+Storage visualization:
+
+Use cyan progress indicators and accurate capacity labels.
+
+Charts:
+
+- Last 24 hours.
+- Last 7 days.
+- Last 30 days when enough history exists.
+
+Show `Unsupported`, `Unavailable`, or `Insufficient data` when necessary.
+
+Do not invent numerical battery health percentages.
+
+## Screen 7 — Windows Device Details
+
+Display:
+
+- PC name.
+- Windows version.
+- Device category.
+- CPU usage.
+- RAM used/total.
+- Storage by drive.
+- Uptime.
+- Battery if the computer has one.
+- AC power status.
+- Last sync timestamp.
+- Performance charts.
+
+Desktop systems without batteries must show an appropriate unavailable state.
+
+Include separate charts for CPU, RAM, and drive usage history when available.
+
+## Screen 8 — Insights
+
+Create useful cross-device analytics.
+
+Features:
+
+- Overall device overview.
+- Battery usage history.
+- Storage growth trends.
+- Devices with lowest battery.
+- Devices with highest storage usage.
+- Device reporting reliability.
+- Daily and weekly summaries.
+- Cross-device comparisons.
+
+Provide time-range filtering.
+
+Make all calculations data-driven.
+
+If insufficient historical data exists, show an explanation instead of fabricating graphs.
+
+## Screen 9 — Alerts & Activity
+
+Features:
+
+- Low battery alerts.
+- Critical battery alerts.
+- Charging threshold alerts.
+- Storage warnings.
+- Device stale warnings.
+- Sync errors.
+- Device paired/revoked events.
+
+Allow filtering by device and alert type.
+
+Display timestamps and alert states.
+
+## Screen 10 — Settings
+
+Sections:
+
+**Appearance**
+- Volt AMOLED dark theme.
+- Animation preference.
+- Reduce motion.
+
+**Monitoring**
+- Android background synchronization settings.
+- Battery optimization instructions.
+- Synchronization status.
+- Manual sync.
+
+**Alerts**
+- Low battery threshold.
+- Critical battery threshold.
+- Charging target.
+- Storage threshold.
+- Stale device notifications.
+- Cooldown preferences.
+
+**Devices**
+- Manage groups.
+- Pairing settings.
+- Revoke access.
+
+**Telegram**
+- Link Telegram.
+- Unlink Telegram.
+- Send test notification.
+- Bot connection status.
+
+**Account**
+- Account information.
+- Logout.
+- Security.
+
+**Data & Privacy**
+- Clear local cache.
+- Export supported monitoring data.
+- Delete account and associated data through an authenticated backend workflow.
+- Privacy explanation.
+
+**About**
+- Revice logo.
+- Revive the Device.
+- App version.
+- Build information.
+
+---
+
+# 6. ANDROID NATIVE MONITORING
+
+Implement a native Android monitoring layer in Kotlin.
+
+Use Flutter platform channels where necessary.
+
+Do not rely exclusively on Flutter plugins when the required metrics are unavailable or incorrectly reported.
+
+### Battery collector
+
+Read available values using official Android APIs.
+
+Include:
+
+- Battery level.
+- Charging status.
+- Plugged-in power source when reported.
+- Battery temperature.
+- Voltage.
+- Health status.
+- Cycle count if supported.
+
+Convert units correctly.
+
+Handle missing values, invalid values, permissions, and Android API version differences.
+
+### Storage collector
+
+Read:
+
+- Total capacity.
+- Free capacity.
+- Used capacity.
+- Percentage used.
+
+Use Android storage APIs rather than attempting to scan protected application directories.
+
+Distinguish accessible filesystem capacity from marketed device storage capacity when appropriate.
+
+Use bytes internally.
+
+Format GB/GiB consistently in the UI.
+
+### Device collector
+
+Read supported general device details.
+
+Avoid collecting unnecessary identifiers.
+
+Do not access:
+
+- SMS.
+- Contacts.
+- Call logs.
+- Photos.
+- Private application files.
+- Location.
+- Personal messages.
+
+Do not require root.
+
+### Background monitoring
+
+Use Android WorkManager for scheduled background monitoring.
+
+Default periodic interval: 15 minutes.
+
+Recognize that Android may delay execution because of Doze, battery optimization, or manufacturer restrictions.
+
+Implement:
+
+- Work scheduling.
+- Unique work registration.
+- Network constraints.
+- Retry and exponential backoff.
+- Bounded offline queue.
+- Manual synchronization.
+- Monitoring after reboot where permitted.
+- Recovery after app restart.
+- Duplicate reading prevention.
+
+Do not promise exact 15-minute delivery.
+
+Do not create an unnecessary always-running foreground service.
+
+Include practical guidance for Xiaomi, POCO, Redmi, Samsung, and other Android devices with aggressive battery management.
+
+Respect Android notification and foreground-service restrictions.
+
+### Battery efficiency
+
+The monitoring app must consume minimal device resources.
+
+Avoid excessive polling.
+
+Prefer platform event notifications where possible.
+
+Measure and document the monitoring app's own power impact during testing.
+
+---
+
+# 7. WINDOWS AGENT
+
+Build a lightweight native Windows application.
+
+Name: **Revice Agent**
+
+Supported OS:
+
+- Windows 10.
+- Windows 11.
+
+### UI
+
+Use a compact dark-themed Windows Forms application.
+
+Match the Revice branding without implementing heavy graphical effects.
+
+The main window should contain:
+
+- Revice header logo.
+- Device name.
+- Connection status.
+- Pairing state.
+- Last sync time.
+- Battery data if applicable.
+- CPU usage.
+- RAM usage.
+- Drive storage overview.
+- Synchronization interval.
+- Manual Sync button.
+- Pair/Unpair button.
+- Start with Windows toggle.
+- Diagnostics/status messages.
+
+### System tray
+
+Implement:
+
+- Revice tray icon.
+- Open Dashboard.
+- Sync Now.
+- Connection Status.
+- Settings.
+- Exit.
+
+Closing the window should minimize it to the tray when monitoring is enabled.
+
+A deliberate Exit command must stop the application.
+
+### Windows collectors
+
+Implement separate interfaces/classes for:
+
+- BatteryCollector.
+- StorageCollector.
+- CpuCollector.
+- MemoryCollector.
+- DeviceInfoCollector.
+- UptimeCollector.
+
+Use stable Windows APIs.
+
+Do not assume a Windows desktop contains a battery.
+
+Do not require Administrator privileges for basic monitoring.
+
+### Sync
+
+Default Windows sync interval: 60 seconds.
+
+Make it configurable with sensible limits.
+
+Features:
+
+- Persistent pairing.
+- Auto-start after login with user permission.
+- Secure token storage.
+- Periodic updates.
+- Manual sync.
+- Network retry.
+- Offline queue.
+- Sleep/resume handling.
+- App restart recovery.
+
+While Windows is sleeping or shut down, monitoring updates are not available.
+
+When Windows resumes, read fresh metrics and synchronize again.
+
+### Installer
+
+Provide a straightforward installation process.
+
+Preferred output:
+
+`Revice-Agent-Setup.exe`
+
+Use an appropriate maintained installer generator such as Inno Setup or WiX.
+
+Prefer per-user installation without unnecessary administrator permissions.
+
+Include:
+
+- Application icon.
+- Start menu shortcut.
+- Optional auto-start.
+- Proper uninstall.
+- Version metadata.
+
+No Windows Service is required for the first release.
+
+---
+
+# 8. FIREBASE DATABASE DESIGN
+
+Use Firebase Realtime Database.
+
+Organize data by owner UID and device ID.
+
+Suggested structure:
+
+- `users/{ownerUid}`
+- `devices/{ownerUid}/{deviceId}`
+- `latest/{ownerUid}/{deviceId}`
+- `history/{ownerUid}/{deviceId}/{dateBucket}/{snapshotId}`
+- `summaries/{ownerUid}/{deviceId}/{date}`
+- `alerts/{ownerUid}/{alertId}`
+- `private/agentCredentials/{deviceId}`
+- `private/pairingSessions/{sessionId}`
+- `private/telegramLinks/{ownerUid}`
+- `private/alertState/{ownerUid}/{deviceId}/{alertType}`
+
+Adapt this structure where necessary for correctness and efficient queries, but document all changes.
+
+### Device record
+
+Include:
+
+- Device ID.
+- Owner UID.
+- Display name.
+- Platform.
+- Manufacturer/model where available.
+- Group.
+- Date paired.
+- Last report timestamp.
+- Agent version.
+- Monitoring configuration.
+- Revoked status.
+
+### Telemetry schema
+
+Use a shared, versioned telemetry contract.
+
+Suggested fields:
+
+- `schemaVersion`
+- `deviceId`
+- `sequenceId`
+- `observedAt`
+- `receivedAt`
+- `battery`
+- `storage`
+- `system`
+- `agentVersion`
+
+Battery fields must be optional when unsupported.
+
+Storage fields must use numeric bytes internally.
+
+Avoid storing sensitive identifiers.
+
+### Timestamps
+
+Use server-authoritative timestamps for receipt.
+
+The agent can supply observation time.
+
+Reject unreasonable future timestamps.
+
+Handle devices with incorrect system clocks.
+
+### History
+
+Use a retention policy:
+
+- Latest reading: overwrite on each valid sync.
+- Raw snapshots: approximately 7 days.
+- Hourly summaries: 30 days.
+- Daily summaries: 90 days.
+- Alert history: 90 days.
+
+Implement cleanup safely through scheduled backend jobs.
+
+Avoid downloading full raw history for every dashboard refresh.
+
+Use scoped Firebase listeners and query indexes where appropriate.
+
+### Offline queue
+
+Both Android and Windows agents must maintain a bounded durable queue of pending readings.
+
+On reconnect:
+
+- Send pending records in controlled batches.
+- Preserve observation timestamps.
+- Avoid duplicate history records.
+- Reject excessively old or invalid readings when necessary.
+- Prioritize the newest status.
+- Prevent unlimited local storage growth.
+
+---
+
+# 9. SECURITY REQUIREMENTS
+
+Security is mandatory.
+
+Implement the following controls.
+
+### Firebase Authentication
+
+Use Firebase Authentication for owner accounts.
+
+Require authenticated ownership checks.
+
+Protect all device records and monitoring data from cross-account access.
+
+### Firebase Security Rules
+
+Default deny.
+
+Permit owners to read their own approved data.
+
+Only expose the minimum required data.
+
+Disallow direct client writes to privileged monitoring records when the Worker is responsible for those writes.
+
+Protect all private credential and pairing paths.
+
+Test rules using Firebase Emulator.
+
+### Cloudflare authorization
+
+The Worker must distinguish between:
+
+1. Authenticated owner requests.
+2. Authenticated agent requests.
+3. Verified Telegram webhook requests.
+
+For owner requests, verify Firebase ID token signatures, issuer, audience, expiry, and owner identity using a compatible JWT verification approach.
+
+Never merely decode the JWT and trust its claims.
+
+For agent requests, verify independently issued credentials and device ownership.
+
+### Agent credentials
+
+Generate a cryptographically secure random credential for each device.
+
+- Store only protected credentials on the agent.
+- Store credential hashes on the backend.
+- Support token revocation and rotation.
+- Use constant-time comparison where appropriate.
+- Never share a single universal agent token across devices.
+
+### Android storage
+
+Use Android Keystore-backed secure storage for sensitive agent credentials where supported.
+
+### Windows storage
+
+Use Windows DPAPI or equivalent OS-level credential protection.
+
+Do not store plaintext secrets in configuration files.
+
+### Service account credentials
+
+Use Cloudflare Worker secrets.
+
+For privileged Firebase REST requests, use properly scoped Google OAuth2 access tokens obtained using a securely stored service account credential.
+
+Do not assume Firebase Admin SDK works unchanged inside Cloudflare Workers.
+
+Verify the chosen approach is compatible with the deployed Workers runtime.
+
+### Telegram secrets
+
+Telegram bot token must exist only on the server.
+
+Never include it in Android or Windows binaries.
+
+### Other security controls
+
+- HTTPS only.
+- Input validation.
+- Request size limits.
+- Rate limiting with persistent state.
+- Replay protection.
+- Idempotency keys.
+- Secure logging.
+- Secret redaction.
+- Credential revocation.
+- Clear authorization errors.
+- No publicly writable Firebase rules.
+- No unrestricted administrative endpoints.
+- No embedded service account credentials.
+- No unsafe automatic fallback when authentication fails.
+
+Do not rely on client-side UI checks for security.
+
+---
+
+# 10. SECURE DEVICE PAIRING
+
+Provide an intuitive pairing system.
+
+### Pairing flow
+
+1. The owner opens Revice on POCO F7.
+2. The owner selects Add Device.
+3. The backend creates a temporary pairing session.
+4. Revice displays a QR code or six-digit pairing code.
+5. The secondary Android or Windows Agent submits the pairing request.
+6. The owner reviews the requesting device.
+7. The owner selects Approve or Reject.
+8. Upon approval, the backend registers the device and issues its individual credential.
+9. The agent securely stores the credential.
+10. The device sends its first telemetry report.
+
+### Requirements
+
+- Five-minute pairing expiry.
+- One-time code usage.
+- Cryptographically random codes.
+- Limited pairing attempts.
+- Explicit owner approval.
+- No auto-approval.
+- No sensitive credentials displayed in logs.
+- Ability to cancel.
+- Ability to revoke later.
+- Duplicate device handling.
+- Safe handling when pairing is interrupted.
+
+Use atomic operations or suitable concurrency controls where needed so two simultaneous requests cannot consume the same pairing session.
+
+### Local POCO registration
+
+The owner's own Android phone must also register as a monitored device.
+
+Provide a secure first-device enrollment flow.
+
+Avoid requiring users to scan a QR code displayed on the same phone.
+
+---
+
+# 11. CLOUDFLARE WORKER API
+
+Implement the backend in TypeScript.
+
+Use clearly separated modules.
+
+Example endpoints:
+
+- `GET /health`
+- `POST /v1/pairing/create`
+- `POST /v1/pairing/join`
+- `POST /v1/pairing/approve`
+- `POST /v1/pairing/reject`
+- `POST /v1/devices/enroll-self`
+- `POST /v1/devices/revoke`
+- `POST /v1/devices/update`
+- `POST /v1/telemetry`
+- `POST /v1/telegram/link`
+- `POST /v1/telegram/unlink`
+- `POST /v1/telegram/test`
+- `POST /v1/telegram/webhook`
+
+Avoid unnecessary public endpoints.
+
+All endpoints must enforce authorization, validation, and sensible response schemas.
+
+Implement:
+
+- Standardized error responses.
+- Request IDs.
+- Structured logging.
+- Idempotency.
+- Timeouts.
+- Retry handling.
+- Secure Firebase REST integration.
+- Telegram API integration.
+- Explicit separation between owner and agent permissions.
+
+### Scheduled operations
+
+Use Cloudflare Cron Triggers for:
+
+- Stale-device checks.
+- History cleanup.
+- Alert recovery.
+- Expired pairing cleanup.
+
+Keep scheduled tasks efficient and within free-tier limits.
+
+If a feature cannot operate reliably within the selected free tier, explain the limitation rather than silently introducing paid infrastructure.
+
+---
+
+# 12. TELEGRAM BOT
+
+Bot name: **Revice Bot**
+
+Telegram is for notifications and quick status commands.
+
+Firebase remains the source of truth for monitoring data.
+
+### Supported commands
+
+- `/start` — link the Telegram account.
+- `/status` — all-device summary.
+- `/devices` — device list.
+- `/battery` — battery overview.
+- `/storage` — storage overview.
+- `/alerts` — recent alerts.
+- `/help` — available commands.
+
+### Secure linking
+
+Implement an owner-authenticated linking flow.
+
+The Android dashboard requests a short-lived linking code from the Worker.
+
+The user opens Telegram and sends the linking code to the bot.
+
+The Worker verifies the code and associates the authorized chat ID with the owner.
+
+Do not trust any arbitrary Telegram chat.
+
+### Alert conditions
+
+Default values:
+
+- Low battery: 20%.
+- Critical battery: 10%.
+- Charging target: 80%.
+- Storage warning: 90% used.
+- Windows stale threshold: configurable, initially approximately five minutes.
+- Android stale threshold: configurable, initially approximately one hour.
+
+Recognize the difference between stale reporting and a confirmed device disconnect.
+
+### Anti-spam logic
+
+Do not send alerts repeatedly for the same unchanged condition.
+
+Implement:
+
+- Alert state tracking.
+- Threshold crossing detection.
+- Cooldowns.
+- Recovery detection.
+- Deduplication.
+- Retry handling.
+- Telegram delivery result tracking.
+
+### Telegram webhook
+
+- Verify the configured Telegram webhook secret.
+- Restrict processing to authorized Telegram chats.
+- Make webhook processing idempotent.
+- Handle Telegram retries.
+- Escape or safely format user-provided device names.
+- Do not expose private telemetry to unauthorized users.
+
+### Message formatting
+
+Use concise professional messages.
+
+Example:
+
+Revice — Low Battery
+
+Device: Redmi Phone  
+Battery: 15%  
+Charging: No  
+Last Report: 10:35 AM
+
+Use appropriate icons only where they improve readability.
+
+---
+
+# 13. DEVICE CONNECTION STATUS
+
+Do not use fake online detection.
+
+Design clear monitoring states:
+
+### Live
+
+A connection or fresh active reporting state is actually confirmed.
+
+### Recent
+
+Recent telemetry has been received within the expected reporting window.
+
+### Stale
+
+The device has not reported within its configured expected interval and grace period.
+
+### Offline
+
+A confirmed connection was lost, or the system has sufficient evidence to classify the device as disconnected.
+
+### Never Synced
+
+The device has been paired but has not successfully reported telemetry.
+
+Use accurate timestamps.
+
+Android Doze may delay monitoring, so avoid treating a delayed Android reading as proof the phone has shut down.
+
+Store sufficient information to explain the status to the user.
+
+---
+
+# 14. NOTIFICATION & DATA POLICY
+
+Revice should only read the information required to monitor device health and availability.
+
+Do not collect personal content.
+
+No remote shell access.
+
+No remote desktop.
+
+No file extraction.
+
+No SMS or private message monitoring.
+
+No location tracking.
+
+No hidden monitoring.
+
+No automatically deleting files.
+
+No arbitrary remote commands.
+
+The owner must approve every registered device, and the app should explain what information it collects.
+
+All monitored devices must visibly identify Revice as an installed monitoring application.
+
+---
+
+# 15. REVICE DESIGN SYSTEM IMPLEMENTATION
+
+Build reusable Flutter components.
+
+Required examples:
+
+- `ReviceScaffold`
+- `ReviceAppBar`
+- `ReviceBottomNavigation`
+- `ReviceDeviceCard`
+- `ReviceStatusBadge`
+- `ReviceBatteryRing`
+- `ReviceStorageBar`
+- `ReviceMetricCard`
+- `ReviceChartCard`
+- `ReviceAlertCard`
+- `ReviceLoadingSkeleton`
+- `ReviceEmptyState`
+- `ReviceErrorState`
+- `ReviceConfirmationDialog`
+- `ReviceSettingsTile`
+
+Create reusable design tokens for:
+
+- Colors.
+- Typography.
+- Spacing.
+- Radius.
+- Shadows.
+- Animation duration.
+- Component dimensions.
+
+### Animation rules
+
+Use smooth and purposeful animations.
+
+Allowed effects:
+
+- Battery fill animation.
+- Circular progress animation.
+- Smooth statistics transitions.
+- Subtle page transitions.
+- Skeleton loading.
+- Small active-state glow.
+- Animated charts.
+
+Avoid excessive motion, continuous GPU-heavy effects, and decorative animations that waste battery.
+
+### Responsive behavior
+
+Support different Android screen sizes.
+
+Prevent overflow on compact phones.
+
+Respect system insets, display cutouts, and accessibility font scaling.
+
+### UI quality
+
+The final product must look like a cohesive premium application.
+
+Do not produce inconsistent spacing, random gradients, excessive glassmorphism, oversized cards, or generic AI-generated dashboard layouts.
+
+---
+
+# 16. PROJECT STRUCTURE
+
+Use a clean monorepo.
+
+Suggested structure:
+
+    revice/
+      apps/
+        android/
+          lib/
+            app/
+            core/
+              theme/
+              routing/
+              network/
+              storage/
+              widgets/
+            features/
+              auth/
+              onboarding/
+              home/
+              devices/
+              monitoring/
+              insights/
+              alerts/
+              pairing/
+              settings/
+            models/
+            repositories/
+            services/
+          android/
+          assets/
+          test/
+
+        windows-agent/
+          Revice.Agent/
+            UI/
+            Collectors/
+            Models/
+            Services/
+            Security/
+            Persistence/
+            Configuration/
+          Revice.Agent.Tests/
+          Installer/
+
+      services/
+        gateway/
+          src/
+            routes/
+            middleware/
+            auth/
+            firebase/
+            telemetry/
+            pairing/
+            telegram/
+            alerts/
+            scheduled/
+            validation/
+            utils/
+          test/
+          wrangler.jsonc
+
+      firebase/
+        database.rules.json
+        firebase.json
+        tests/
+
+      packages/
+        contracts/
+          schemas/
+          examples/
+          api/
+
+      branding/
+        app-icon/
+        header-logo/
+
+      docs/
+        architecture.md
+        firebase-setup.md
+        cloudflare-setup.md
+        telegram-setup.md
+        android-installation.md
+        windows-installation.md
+        device-pairing.md
+        troubleshooting.md
+        security.md
+        release.md
+
+      scripts/
+      .github/
+        workflows/
+
+      README.md
+      .gitignore
+      CHANGELOG.md
+
+Adapt directory names if framework conventions require it.
+
+Do not unnecessarily split small features into dozens of empty files.
+
+Keep responsibilities clear.
+
+---
+
+# 17. DEVELOPMENT QUALITY & ANTI-SLOP RULES
+
+Follow strict code quality standards inspired by professional anti-slop development practices.
+
+### Architecture
+
+- Clear module boundaries.
+- Separation of UI and business logic.
+- Separation of repositories and services.
+- Reusable components.
+- Centralized configuration.
+- Typed data models.
+- Explicit interfaces where useful.
+- Minimal coupling.
+- Simple, testable functions.
+
+### Code quality
+
+- No duplicate implementations.
+- No unnecessary abstraction.
+- No dead code.
+- No excessive dependencies.
+- No meaningless wrappers.
+- No giant all-in-one files.
+- No unused imports.
+- No hardcoded secrets.
+- No unnecessary global mutable state.
+- No broad catch blocks that silently suppress errors.
+- No fake success messages.
+- No unfinished functions presented as implemented.
+- No invented API behavior.
+
+### UI quality
+
+- No inconsistent padding.
+- No random colors.
+- No decorative effects without purpose.
+- No inaccessible contrast.
+- No irrelevant icons.
+- No excessive animations.
+- No crowded metric cards.
+- No fake statistics in production.
+
+### Reliability
+
+- Handle null values.
+- Handle unsupported metrics.
+- Handle API failures.
+- Handle lost network connectivity.
+- Handle expired tokens.
+- Handle revoked devices.
+- Handle device sleep.
+- Handle Android battery restrictions.
+- Handle app restart.
+- Handle invalid timestamps.
+- Handle duplicate requests.
+
+### Documentation
+
+Document important decisions.
+
+Avoid comments that merely repeat the code.
+
+Explain non-obvious security and platform behaviors.
+
+### Dependencies
+
+Prefer maintained packages with compatible licenses.
+
+Use current stable versions verified for the target toolchain.
+
+Pin appropriate versions and generate reproducible dependency lockfiles.
+
+Do not blindly use outdated example code.
+
+---
+
+# 18. ENVIRONMENT CONFIGURATION
+
+Create safe template configuration files.
+
+Example non-secret configuration:
+
+    FIREBASE_PROJECT_ID=
+    FIREBASE_DATABASE_URL=
+    FIREBASE_ANDROID_APP_ID=
+    CLOUDFLARE_GATEWAY_URL=
+
+Example Worker secrets:
+
+    FIREBASE_SERVICE_ACCOUNT_JSON=
+    TELEGRAM_BOT_TOKEN=
+    TELEGRAM_WEBHOOK_SECRET=
+    AGENT_TOKEN_HASH_KEY=
+
+Use only the secrets actually required by the final implementation.
+
+Document the difference between Firebase public client configuration and privileged server credentials.
+
+Provide:
+
+- `.env.example` or equivalent.
+- `.dev.vars.example` for Workers.
+- `.gitignore` exclusions.
+- Setup instructions.
+- Secret rotation instructions.
+
+Never commit real secrets.
+
+Do not ask me to paste private keys into public source code.
+
+---
+
+# 19. TESTING REQUIREMENTS
+
+Implement automated tests wherever practical.
+
+### Flutter tests
+
+- Authentication state.
+- Device model parsing.
+- Battery percentage formatting.
+- Storage formatting.
+- Device sorting.
+- Monitoring state classification.
+- Offline cache.
+- UI loading states.
+- UI error states.
+- Alert threshold logic.
+
+### Android integration tests
+
+- Battery reading.
+- Charging state.
+- Storage reading.
+- WorkManager scheduling.
+- Offline recovery.
+- Secure credential persistence.
+- Device restart behavior where testable.
+
+### Windows tests
+
+- Device collectors.
+- Desktop without battery.
+- Drive enumeration.
+- Serialization.
+- Token persistence.
+- Offline queue.
+- Agent configuration.
+- Retry logic.
+
+### Backend tests
+
+- JWT verification.
+- Agent authentication.
+- Pairing expiry.
+- Pairing code reuse.
+- Unauthorized access.
+- Cross-owner access.
+- Revoked tokens.
+- Telemetry validation.
+- Replay protection.
+- Idempotency.
+- Alert cooldown.
+- Telegram webhook verification.
+- Scheduled cleanup.
+
+Use Firebase Emulator for Security Rules and backend tests where appropriate.
+
+### Manual test scenarios
+
+1. Pair POCO F7.
+2. Pair a second Android device.
+3. Read real battery and storage data.
+4. Turn off internet on the second Android.
+5. Verify the dashboard reports stale readings correctly.
+6. Restore internet.
+7. Verify synchronization recovery.
+8. Pair Windows Agent.
+9. Lock Windows.
+10. Verify the agent continues if the system remains awake.
+11. Put Windows to sleep.
+12. Verify monitoring stops appropriately.
+13. Resume Windows.
+14. Verify monitoring recovers.
+15. Trigger a test Telegram notification.
+16. Revoke an agent.
+17. Verify the revoked agent cannot send further telemetry.
+18. Reinstall an agent and confirm secure re-pairing.
+
+Do not claim tests pass unless they actually run and pass.
+
+---
+
+# 20. DEVELOPMENT PHASES
+
+Implement in this order.
+
+## PHASE 0 — Repository Audit & Foundation
+
+- Inspect the existing repository.
+- Identify installed SDKs and tools.
+- Review existing branding assets.
+- Create an implementation plan.
+- Create the monorepo structure.
+- Establish common data contracts.
+- Configure linting and formatting.
+- Establish test infrastructure.
+- Document missing credentials and external configuration.
+
+Deliverable: Clean buildable foundation.
+
+## PHASE 1 — Android Foundation
+
+- Flutter application.
+- Volt AMOLED theme.
+- Official Revice branding.
+- Splash.
+- Onboarding.
+- Authentication screens.
+- Bottom navigation.
+- Home dashboard.
+- Devices screen.
+- Settings screen.
+- Reusable UI components.
+
+Connect actual local Android battery and storage collectors.
+
+Deliverable: Android app displays its own real metrics.
+
+## PHASE 2 — Firebase & Cloudflare
+
+- Firebase Authentication integration.
+- Realtime Database integration.
+- Firebase Security Rules.
+- Cloudflare Worker project.
+- Owner JWT verification.
+- Secure Firebase REST integration.
+- Device credentials.
+- Pairing session endpoints.
+- Telemetry ingestion.
+- Device revocation.
+
+Deliverable: Secure end-to-end backend.
+
+## PHASE 3 — Multi-Android Monitoring
+
+- Local device enrollment.
+- Second Android pairing.
+- Agent mode.
+- WorkManager.
+- Offline queue.
+- Realtime dashboard.
+- Device groups.
+- Freshness indicators.
+- Device details.
+
+Deliverable: Two or more Android phones can securely synchronize and be monitored.
+
+## PHASE 4 — Windows Agent
+
+- C# .NET agent.
+- System tray.
+- Collectors.
+- Pairing.
+- Secure token persistence.
+- Automatic synchronization.
+- Auto-start option.
+- Offline recovery.
+- Windows installer.
+
+Deliverable: Windows machine appears in the Android dashboard with real metrics.
+
+## PHASE 5 — Analytics & Telegram
+
+- Historical snapshots.
+- Aggregated summaries.
+- Battery charts.
+- Storage trends.
+- Telegram linking.
+- Telegram commands.
+- Smart alerts.
+- Alert cooldown.
+- Scheduled stale checks.
+- Data cleanup.
+
+Deliverable: Working cross-device insights and notification system.
+
+## PHASE 6 — Hardening & Release
+
+- Full test suite.
+- Security review.
+- Performance review.
+- Android battery usage review.
+- Firebase quota optimization.
+- Accessibility improvements.
+- Error handling.
+- Release APK.
+- Windows installer.
+- Installation documentation.
+- Troubleshooting documentation.
+
+Deliverable: Usable version 1.0 release.
+
+---
+
+# 21. USER SETUP EXPERIENCE
+
+The final experience must be straightforward.
+
+### Android installation
+
+The user should:
+
+1. Install `Revice.apk`.
+2. Open Revice.
+3. Sign in.
+4. Register their POCO F7.
+5. See actual local battery/storage.
+6. Add another Android using pairing.
+7. View both devices from the dashboard.
+
+### Windows installation
+
+The user should:
+
+1. Run `Revice-Agent-Setup.exe`.
+2. Open the installed agent.
+3. Enter a pairing code.
+4. Approve pairing from the Android dashboard.
+5. Choose whether to start with Windows.
+6. Minimize the application to the system tray.
+7. See the Windows device in the Android dashboard.
+
+### Telegram setup
+
+The user should:
+
+1. Create a Telegram bot using BotFather.
+2. Configure its token securely in Cloudflare.
+3. Open Revice Settings.
+4. Select Link Telegram.
+5. Complete secure linking.
+6. Send a test notification.
+7. Receive future alerts based on real monitoring events.
+
+Write beginner-friendly step-by-step installation documentation.
+
+Use practical Windows PowerShell commands where appropriate.
+
+---
+
+# 22. COST & PERFORMANCE OPTIMIZATION
+
+This is a personal project intended to start with no recurring infrastructure cost.
+
+Optimize for Firebase Spark and Cloudflare Workers Free.
+
+Use:
+
+- Small telemetry payloads.
+- Efficient database paths.
+- Scoped realtime listeners.
+- Bounded history.
+- Aggregated statistics.
+- Scheduled cleanup.
+- Controlled retry behavior.
+- Caching.
+- Minimal backend CPU usage.
+
+Do not use expensive real-time polling for all devices.
+
+Do not send full historical data on every synchronization.
+
+Do not introduce billable Firebase features without explicit approval.
+
+If a free-tier quota or limitation blocks a feature, document the issue and provide a safe alternative.
+
+Never bypass security to reduce cost.
+
+---
+
+# 23. ACCEPTANCE CRITERIA
+
+The implementation can be considered a functional version 1.0 only when:
+
+- Revice Android installs and launches successfully on a real device.
+- The application uses the correct Revice branding and Volt AMOLED theme.
+- The POCO F7 displays actual battery and storage readings.
+- A second Android can be paired.
+- Multiple Android devices can publish readings securely.
+- The dashboard displays device-specific data correctly.
+- Stale readings are clearly identified.
+- Monitoring remains useful after temporary network failures.
+- Windows Agent can be installed and paired.
+- Windows system metrics are correctly reported.
+- Device revocation blocks future agent writes.
+- Firebase Security Rules prevent unauthorized reads and writes.
+- Telegram linking is secure.
+- Telegram alerts are sent only for authorized accounts.
+- Alert deduplication works.
+- Logs do not expose secrets.
+- No dummy readings appear as real production data.
+- Important automated tests pass.
+- Installable Android and Windows release artifacts can be generated in an appropriately configured environment.
+- Setup instructions are complete.
+
+If a requirement is blocked by a missing credential, missing SDK, physical device, or external deployment approval, report it explicitly.
+
+Never label an untested or incomplete feature as finished.
+
+---
+
+# 24. HOW YOU SHOULD WORK
+
+You are authorized to inspect, create, edit, and test project files in the working repository.
+
+Follow these rules:
+
+1. Inspect the repository before modifying it.
+2. Preserve working code whenever possible.
+3. Create and maintain a concise implementation plan.
+4. Implement features in logical phases.
+5. Prioritize functional vertical slices over large amounts of disconnected scaffolding.
+6. After each phase, run available formatters, analyzers, builds, and tests.
+7. Fix failures before proceeding.
+8. Keep the codebase runnable after each completed milestone.
+9. Clearly distinguish completed, tested, partially completed, and blocked work.
+10. Record important decisions in project documentation.
+11. Do not ask me unnecessary questions that can be resolved with reasonable engineering decisions.
+12. Do ask for credentials, account approvals, or platform access when they are genuinely required.
+13. Never fabricate credentials or pretend external integrations are configured.
+14. Never substitute mock functionality for real production functionality.
+15. Keep demo fixtures isolated and visibly marked.
+16. Stop before performing irreversible external actions or enabling paid resources without my approval.
+
+When a phase is complete, report:
+
+- What you built.
+- Which files changed.
+- Which tests ran.
+- Their results.
+- How I can run or test the feature.
+- Any remaining limitations.
+- The next development phase.
+
+If I explicitly request continuous implementation, proceed to the next phase when no external approval or blocking information is required.
+
+---
+
+# 25. INITIAL TASK — START NOW
+
+Begin with Phase 0 and Phase 1.
+
+First inspect the repository and development environment.
+
+Then:
+
+1. Create the Revice monorepo structure.
+2. Implement the Flutter Android application.
+3. Apply the official Volt AMOLED theme.
+4. Integrate my provided Revice logo assets.
+5. Build the main navigation and core screens.
+6. Implement real Android battery collection.
+7. Implement real Android storage collection.
+8. Display real readings on the local device dashboard.
+9. Prepare the shared telemetry schemas.
+10. Prepare the backend and Windows Agent directory structure without pretending their integrations are already complete.
+11. Run Flutter analysis and available tests.
+12. Provide exact commands to run the app on my POCO F7.
+
+Do not start by generating hundreds of placeholder files.
+
+Start with the smallest working vertical slice: a branded Android application reading and displaying its own real battery and storage data.
+
+After validating that foundation, proceed toward Firebase Authentication, secure device pairing, multi-device monitoring, Windows Agent, and Telegram integration according to the development plan.
+
+**Final objective: Deliver Revice — Revive the Device, a secure, visually polished, efficient, and genuinely functional Android and Windows multi-device monitoring ecosystem.**

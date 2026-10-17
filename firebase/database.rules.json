@@ -1,0 +1,18 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "directory": {
+      "$owner": { ".read": "auth != null && auth.uid === $owner && auth.token.email_verified === true" }
+    },
+    "devices": {
+      "$owner": {
+        "$device": {
+          "public": { ".read": "auth != null && auth.uid === $owner && auth.token.email_verified === true" },
+          "history": { ".read": "auth != null && auth.uid === $owner && auth.token.email_verified === true", ".indexOn": ["observedAt"] }
+          ,"alerts": { ".read": "auth != null && auth.uid === $owner && auth.token.email_verified === true", ".indexOn": ["at"] }
+        }
+      }
+    }
+  }
+}

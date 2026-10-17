@@ -1,0 +1,15 @@
+{
+  "name": "revice-gateway",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "triggers": {
+    "crons": [
+      "*/5 * * * *"
+    ]
+  },
+  "vars": {
+    "FIREBASE_PROJECT_ID": "revice-e9d6b",
+    "FIREBASE_DATABASE_URL": "https://revice-e9d6b-default-rtdb.asia-southeast1.firebasedatabase.app"
+  }
+}
