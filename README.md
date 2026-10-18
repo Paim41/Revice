@@ -217,7 +217,3 @@ See [cloud-setup.md](docs/cloud-setup.md) for setup steps and limitations.
 **Revice · Windows Agent 0.2.1 · Development build**
 
 </div>
-
-<img width="1254" height="1254" alt="codex-clipboard-2052a8c8-3110-4cbd-a4c4-42d1a64a8675" src="https://github.com/user-attachments/assets/44dd53f6-4568-41ad-b5d2-06c0d5cd4334" />
-<img width="1254" height="1254" alt="codex-clipboard-2052a8c8-3110-4cbd-a4c4-42d1a64a8675" src="https://github.com/user-attachments/assets/c9284dcc-21df-450a-acec-56f74f5b45e8" />
-<img width="1254" height="1254" alt="download" src="https://github.com/user-attachments/assets/eaea6281-8f55-46d9-b25d-2aa4c92df65d" />
