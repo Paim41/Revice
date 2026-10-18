@@ -11,6 +11,8 @@ import 'history_screen.dart';
 import 'device_overview.dart';
 import 'developer_credits.dart';
 import 'floating_navigation_bar.dart';
+import '../services/mini_dashboard.dart';
+import 'mini_dashboard_settings.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key, required this.controller, required this.cloud});
@@ -23,12 +25,23 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   int page = 0;
   Timer? timer;
+  late final MiniDashboard mini;
   MonitoringController get controller => widget.controller;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    mini = MiniDashboard(
+      controller,
+      widget.cloud,
+      onNavigate: (target) {
+        if (!mounted) return;
+        Navigator.of(context).popUntil((route) => route.isFirst);
+        setState(() => page = target == 'devices' ? 1 : 0);
+      },
+    );
+    mini.initialize();
     timer = Timer.periodic(const Duration(minutes: 1), (_) {
       if (controller.onboarded) controller.refresh();
     });
@@ -38,6 +51,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     timer?.cancel();
     if (state == AppLifecycleState.resumed) {
+      mini.resume();
       if (controller.onboarded) controller.refresh();
       timer = Timer.periodic(const Duration(minutes: 1), (_) {
         if (controller.onboarded) controller.refresh();
@@ -49,6 +63,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   void dispose() {
     timer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
+    mini.dispose();
     super.dispose();
   }
 
@@ -159,7 +174,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                 ),
                 SizedBox(height: 16),
                 Text(
-                  'Monitor locally or connect devices through a configured cloud account. Notifications and background monitoring are still in development.',
+                  'Monitor locally or connect devices through a configured cloud account. Optional background monitoring and Mini Dashboard notifications are available in Settings.',
                   style: TextStyle(color: muted),
                 ),
               ],
@@ -384,6 +399,20 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
       style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
     ),
     const SizedBox(height: 20),
+    Panel(
+      child: ListTile(
+        leading: const Icon(Icons.notifications_outlined, color: cyan),
+        title: const Text('Notifications'),
+        subtitle: const Text('Mini Dashboard'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => MiniDashboardSettings(dashboard: mini),
+          ),
+        ),
+      ),
+    ),
+    const SizedBox(height: 16),
     Panel(
       child: Column(
         children: [

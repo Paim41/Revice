@@ -34,6 +34,8 @@ void main() {
     await tester.pumpWidget(const ReviceApp());
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('Monitor this device'), 200);
+    await tester.ensureVisible(find.text('Monitor this device'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Monitor this device'));
     await tester.pumpAndSettle();
     expect(saved, isTrue);

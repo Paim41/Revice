@@ -36,6 +36,13 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+    testOptions { unitTests.isIncludeAndroidResources = true }
+}
+
+dependencies {
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.17")
+    testImplementation("org.mockito:mockito-core:5.0.0")
 }
 
 kotlin {
@@ -46,4 +53,11 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+// Host tests package Flutter assets too; declare their producer for Gradle 9.
+tasks.configureEach {
+    if (name == "packageDebugUnitTestForUnitTest") {
+        dependsOn("copyFlutterAssetsDebug")
+    }
 }

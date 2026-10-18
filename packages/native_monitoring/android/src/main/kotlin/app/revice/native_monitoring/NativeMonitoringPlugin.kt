@@ -3,12 +3,23 @@ package app.revice.native_monitoring
 import android.content.Context
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodChannel
+import io.flutter.embedding.engine.plugins.activity.ActivityAware
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
+import io.flutter.plugin.common.PluginRegistry
 
-class NativeMonitoringPlugin : FlutterPlugin {
+class NativeMonitoringPlugin : FlutterPlugin, ActivityAware {
     private lateinit var channel: MethodChannel
+    private lateinit var miniChannel: MethodChannel
+    private lateinit var mini: MiniDashboard
+    private var activityBinding: ActivityPluginBinding? = null
+    private val permissionListener = PluginRegistry.RequestPermissionsResultListener { code, _, _ -> mini.permissionResult(code) }
+    private val intentListener = PluginRegistry.NewIntentListener { intent -> mini.acceptIntent(intent); false }
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         val context = binding.applicationContext
         val preferences = context.getSharedPreferences("revice", Context.MODE_PRIVATE)
+        miniChannel = MethodChannel(binding.binaryMessenger, "app.revice/mini_dashboard")
+        mini = MiniDashboard(context, miniChannel)
+        miniChannel.setMethodCallHandler(mini::handle)
         channel = MethodChannel(binding.binaryMessenger, "app.revice/monitoring")
         channel.setMethodCallHandler { call, result ->
             when (call.method) {
@@ -47,5 +58,18 @@ class NativeMonitoringPlugin : FlutterPlugin {
             }
         }
     }
-    override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) { channel.setMethodCallHandler(null) }
+    override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) { channel.setMethodCallHandler(null); miniChannel.setMethodCallHandler(null); mini.detach(true) }
+    override fun onAttachedToActivity(binding: ActivityPluginBinding) {
+        activityBinding = binding; mini.activity = binding.activity
+        binding.addRequestPermissionsResultListener(permissionListener); binding.addOnNewIntentListener(intentListener)
+        mini.acceptIntent(binding.activity.intent)
+    }
+    private fun detachActivity(final: Boolean) {
+        activityBinding?.removeRequestPermissionsResultListener(permissionListener)
+        activityBinding?.removeOnNewIntentListener(intentListener)
+        activityBinding = null; mini.detach(final)
+    }
+    override fun onDetachedFromActivityForConfigChanges() = detachActivity(false)
+    override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) = onAttachedToActivity(binding)
+    override fun onDetachedFromActivity() = detachActivity(true)
 }

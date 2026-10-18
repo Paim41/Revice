@@ -1,3 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
   package="app.revice.native_monitoring">
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <application>
+    <receiver android:name=".DashboardDismissReceiver" android:exported="false" />
+  </application>
 </manifest>

@@ -33,6 +33,8 @@ class CloudService extends ChangeNotifier {
   FirebaseAuth? auth;
   Database? _db;
   String? ownerUid, deviceId, _credential;
+  // Identifies the account owning the current public device cache.
+  String? devicesOwnerUid;
   String? error;
   DateTime? lastSync;
   bool ready = false, syncing = false;
@@ -102,6 +104,7 @@ class CloudService extends ChangeNotifier {
   }
 
   Future<void> _watchDevices() async {
+    devicesOwnerUid = null;
     await _directorySubscription?.cancel();
     for (final sub in _deviceSubscriptions.values) {
       await sub.cancel();
@@ -111,6 +114,7 @@ class CloudService extends ChangeNotifier {
     final user = auth?.currentUser;
     if (user == null || !user.emailVerified) return;
     final uid = user.uid;
+    devicesOwnerUid = uid;
     _directorySubscription = FirebaseDatabase.instance
         .ref('directory/$uid')
         .onValue

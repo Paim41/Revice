@@ -4,6 +4,7 @@ import 'package:workmanager/workmanager.dart';
 
 import '../models/local_snapshot.dart';
 import 'cloud_service.dart';
+import 'mini_dashboard.dart';
 
 @pragma('vm:entry-point')
 void monitoringDispatcher() {
@@ -16,7 +17,9 @@ void monitoringDispatcher() {
       final raw = await const MethodChannel('app.revice/monitoring')
           .invokeMapMethod<Object?, Object?>('readSnapshot');
       if (raw == null) return false;
-      await cloud.enqueueAndSync(LocalSnapshot.fromMap(raw));
+      final snapshot = LocalSnapshot.fromMap(raw);
+      await cloud.enqueueAndSync(snapshot);
+      await updateBackgroundDashboard(cloud, snapshot);
       return cloud.error == null;
     } catch (_) {
       return false;
