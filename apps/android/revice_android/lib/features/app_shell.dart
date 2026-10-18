@@ -9,6 +9,8 @@ import '../services/cloud_service.dart';
 import 'cloud_screen.dart';
 import 'history_screen.dart';
 import 'device_overview.dart';
+import 'developer_credits.dart';
+import 'floating_navigation_bar.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key, required this.controller, required this.cloud});
@@ -102,31 +104,10 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
             ],
           ),
         ),
-        bottomNavigationBar: NavigationBar(
+        bottomNavigationBar: ReviceFloatingNavigationBar(
           selectedIndex: page,
+          reduceMotion: controller.reduceMotion,
           onDestinationSelected: (value) => setState(() => page = value),
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.grid_view_rounded),
-              label: 'Home',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.devices_rounded),
-              label: 'Devices',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.insights_rounded),
-              label: 'Insights',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.notifications_none_rounded),
-              label: 'Activity',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.tune_rounded),
-              label: 'Settings',
-            ),
-          ],
         ),
       );
     },
@@ -441,11 +422,18 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
         onTap: _cloudInfo,
       ),
     ),
-    const SizedBox(height: 24),
-    const Text(
-      '0.2.0 • Android preview',
-      textAlign: TextAlign.center,
-      style: TextStyle(color: muted),
+    const SizedBox(height: 16),
+    Panel(
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: const Icon(Icons.code_rounded, color: cyan),
+        title: const Text('Developer Credits'),
+        subtitle: const Text('Revice • Developed by Paim41'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const DeveloperCredits()),
+        ),
+      ),
     ),
   ];
 

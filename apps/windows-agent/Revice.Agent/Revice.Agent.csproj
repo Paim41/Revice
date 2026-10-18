@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Version>0.2.1</Version>
-    <FileVersion>0.2.1.0</FileVersion>
+    <Version>0.2.2</Version>
+    <FileVersion>0.2.2.0</FileVersion>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
@@ -10,4 +10,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\..\branding\revice-app-icon.png" LogicalName="Revice.AppIcon.png" />
+  </ItemGroup>
 </Project>

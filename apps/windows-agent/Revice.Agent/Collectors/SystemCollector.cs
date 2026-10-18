@@ -45,7 +45,7 @@ public sealed class SystemCollector
             catch (UnauthorizedAccessException) { /* Access may differ across drives. */ }
         }
         var systemDrive = drives.FirstOrDefault(d => string.Equals(d.Name, Path.GetPathRoot(Environment.SystemDirectory), StringComparison.OrdinalIgnoreCase));
-        var reading = new Reading(1, sequence, DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"), "0.2.1", battery,
+        var reading = new Reading(1, sequence, DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"), UI.AboutDialog.AppVersion, battery,
             systemDrive is null ? null : new(systemDrive.TotalBytes, systemDrive.AvailableBytes),
             new(cpu, memory.TotalPhysical, memory.TotalPhysical - memory.AvailablePhysical, Environment.TickCount64 / 1000));
         return new(reading, drives);

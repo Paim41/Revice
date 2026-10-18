@@ -1,7 +1,7 @@
 name: revice_android
 description: Revice local Android monitoring foundation.
 publish_to: none
-version: 0.2.0+3
+version: 0.2.2+4
 environment:
   sdk: ^3.13.5
 dependencies:
@@ -25,4 +25,6 @@ dev_dependencies:
   flutter_lints: 6.0.0
 flutter:
   uses-material-design: true
+  assets:
+    - assets/revice-app-icon.png
 
