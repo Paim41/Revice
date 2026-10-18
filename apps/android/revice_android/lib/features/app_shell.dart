@@ -69,7 +69,21 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
       ];
       return Scaffold(
         appBar: AppBar(
-          title: Text(titles[page]),
+          title: Row(
+            children: [
+              Image.asset(
+                'assets/revice-header-logo.png',
+                width: 112,
+                height: 38,
+                fit: BoxFit.contain,
+                semanticLabel: 'Revice',
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(titles[page], overflow: TextOverflow.ellipsis),
+              ),
+            ],
+          ),
           actions: [
             IconButton(
               tooltip: 'Refresh local readings',

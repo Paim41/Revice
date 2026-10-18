@@ -31,7 +31,10 @@ public sealed class AgentForm : Form
         ClientSize=new Size(1100,740); StartPosition=FormStartPosition.CenterScreen; FormBorderStyle=FormBorderStyle.FixedSingle; MaximizeBox=false; BackColor=Volt.Background; ForeColor=Volt.Text; Font=Volt.Font();
         var header=new Panel { Dock=DockStyle.Top, Height=88, Padding=new Padding(18,8,18,6) };
         var heading=new FlowLayoutPanel { Dock=DockStyle.Left, Width=430, FlowDirection=FlowDirection.TopDown, WrapContents=false };
-        heading.Controls.Add(Volt.Label("REVICE AGENT",20,true)); heading.Controls.Add(Volt.Label("CONNECT  •  SYNC  •  STAY IN CONTROL",9));
+        Icon=BrandAssets.LoadIcon();
+        var brand=new PictureBox { Image=BrandAssets.LoadHeader(),SizeMode=PictureBoxSizeMode.Zoom,Size=new Size(240,54),Margin=Padding.Empty,AccessibleName="Revice" };
+        heading.Controls.Add(brand); heading.Controls.Add(Volt.Label("CONNECT  •  SYNC  •  STAY IN CONTROL",9));
+        FormClosed+=(_,_)=> {brand.Image?.Dispose();Icon?.Dispose();};
         var summary=new FlowLayoutPanel { Dock=DockStyle.Fill, FlowDirection=FlowDirection.TopDown, WrapContents=false };
         summary.Controls.Add(status); summary.Controls.Add(lastSync); var headerExit=Volt.Button("Exit Revice");headerExit.Click+=async(_,_)=>await ExitApplication();
         var headerActions=new FlowLayoutPanel {Dock=DockStyle.Right,Width=130,FlowDirection=FlowDirection.TopDown,WrapContents=false}; var about=Volt.Button("About & Credits"); about.Click+=(_,_)=> {using var dialog=new AboutDialog();dialog.ShowDialog(this);};headerActions.Controls.Add(about);headerActions.Controls.Add(headerExit); header.Controls.Add(summary); header.Controls.Add(headerActions); header.Controls.Add(heading);
@@ -67,7 +70,7 @@ public sealed class AgentForm : Form
         var menu=new ContextMenuStrip { BackColor=Volt.Surface,ForeColor=Volt.Text };
         menu.Items.Add("Open Revice Agent",null,(_,_)=>OpenWindow()); menu.Items.Add("Sync now",null,async(_,_)=>await Run("Sync",agent.Tick)); menu.Items.Add(trayStatus);
         menu.Items.Add("Settings",null,(_,_)=> { OpenWindow(); gateway.Focus(); }); menu.Items.Add("Exit",null,async(_,_)=>await ExitApplication());
-        tray=new NotifyIcon { Text="Revice Agent",Icon=SystemIcons.Application,Visible=true,ContextMenuStrip=menu }; tray.DoubleClick+=(_,_)=>OpenWindow();
+        tray=new NotifyIcon { Text="Revice Agent",Icon=Icon,Visible=true,ContextMenuStrip=menu }; tray.DoubleClick+=(_,_)=>OpenWindow();
         timer.Interval=agent.State.IntervalSeconds*1000; timer.Tick+=async(_,_)=>await Run("Sync",agent.Tick);
         Shown+=async(_,_)=> { FitWorkingArea();ResizeCards(left);ResizeCards(right);timer.Start();if(Environment.GetCommandLineArgs().Contains("--startup"))Hide();await Run("Refresh",agent.Tick); };
         DpiChanged+=(_,_)=>FitWorkingArea();

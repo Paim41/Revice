@@ -10,6 +10,7 @@ internal sealed class AboutDialog : Form
     public AboutDialog()
     {
         Text = "About & Credits";
+        Icon = BrandAssets.LoadIcon();
         AutoScaleMode = AutoScaleMode.Dpi;
         ClientSize = new Size(450, 355);
         FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -20,7 +21,7 @@ internal sealed class AboutDialog : Form
         var logo = new PictureBox { Size = new Size(64, 64), SizeMode = PictureBoxSizeMode.Zoom, Margin = new Padding(0, 0, 0, 8) };
         using var resource = Assembly.GetExecutingAssembly().GetManifestResourceStream("Revice.AppIcon.png");
         if (resource != null) { using var original = Image.FromStream(resource); logo.Image = new Bitmap(original); }
-        FormClosed += (_, _) => logo.Image?.Dispose();
+        FormClosed += (_, _) => { logo.Image?.Dispose(); Icon?.Dispose(); };
         content.Controls.Add(logo);
         content.Controls.Add(Volt.Label("REVICE AGENT", 18, true));
         content.Controls.Add(Volt.Label("Revive the Device"));
