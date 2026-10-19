@@ -41,7 +41,14 @@ Map<String, dynamic> miniPayload({
   required LocalSnapshot? local,
   required Map<String, Map<String, dynamic>> devices,
 }) {
-  final rows = <Map<String, dynamic>>[if (local != null) miniLocalRow(local)];
+  final rows = <Map<String, dynamic>>[
+    if (local != null)
+      {
+        ...miniLocalRow(local),
+        if (owner != null && devices[localId]?['name'] != null)
+          'name': devices[localId]!['name'],
+      },
+  ];
   if (owner != null) {
     for (final entry in devices.entries) {
       final device = entry.value;

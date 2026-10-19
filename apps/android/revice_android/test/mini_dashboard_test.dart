@@ -49,6 +49,26 @@ void main() {
     },
   };
   late MonitoringController monitor;
+  test(
+    'Registered local alias is used without modifying hardware metadata',
+    () {
+      final payload = miniPayload(
+        owner: 'owner',
+        localId: 'self',
+        local: sample,
+        devices: {'self': remote('paIM Phone')},
+      );
+      expect((payload['rows'] as List).single['name'], 'paIM Phone');
+      expect(sample.model, 'POCO F7');
+      final signedOut = miniPayload(
+        owner: null,
+        localId: 'self',
+        local: sample,
+        devices: {'self': remote('paIM Phone')},
+      );
+      expect((signedOut['rows'] as List).single['name'], 'POCO F7');
+    },
+  );
   late CloudService cloud;
   late MiniDashboard dashboard;
   late List<MethodCall> calls;

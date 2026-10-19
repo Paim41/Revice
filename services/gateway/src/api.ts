@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ApiError, type Env, type Store } from './store.js';
-import { deviceInput, id, secret, telemetry, type Device, type Pairing } from './contracts.js';
+import { deviceInput, displayName, id, secret, telemetry, type Device, type Pairing } from './contracts.js';
 import { hash, ownerIdentity, randomCode, rateLimit, sameHash } from './security.js';
 import { evaluateAlerts } from './alerts.js';
 import { telegramOwner, telegramWebhook } from './telegram.js';
@@ -48,7 +48,7 @@ export function createApi(env: Env, dependencies: Dependencies) {
         await rateLimit(store, await hash(`owner:${owner}`, env.AGENT_TOKEN_HASH_KEY), 60, now);
       }
       if (path === '/v1/devices/enroll-self') {
-        const input = deviceInput.parse(data);
+        const input = deviceInput.extend({ name: displayName }).parse(data);
         const credentialHash = await hash(input.credential, env.AGENT_TOKEN_HASH_KEY);
         const record = await store.update<Device>(`devices/${owner}/${input.deviceId}`, current => {
           if (current) {
@@ -96,7 +96,7 @@ export function createApi(env: Env, dependencies: Dependencies) {
         return reply({ state: 'approved', ownerUid: session.ownerUid, deviceId: session.request.deviceId });
       }
       if (['/v1/pairing/inspect', '/v1/pairing/approve', '/v1/pairing/reject'].includes(path)) {
-        const { code } = pairingInput.parse(data);
+        const { code, name } = (path.endsWith('approve') ? pairingInput.extend({ name: displayName.optional() }) : pairingInput.extend({ name: z.never().optional() })).parse(data);
         const session = await store.update<Pairing>(`private/pairing/${code}`, current => {
           if (!current || current.ownerUid !== owner || current.expiresAt <= now) throw new ApiError(404, 'PAIRING_UNAVAILABLE');
           if (path.endsWith('inspect')) return current;
@@ -115,14 +115,14 @@ export function createApi(env: Env, dependencies: Dependencies) {
               if (!sameHash(existing.credentialHash, r.credentialHash) || existing.public.revoked) throw new ApiError(409, 'DEVICE_EXISTS');
               return existing;
             }
-            return { credentialHash: r.credentialHash, lastSequence: -1, public: { deviceId: r.deviceId, name: r.name, platform: r.platform, pairedAt: now, revoked: false } };
+            return { credentialHash: r.credentialHash, lastSequence: -1, public: { deviceId: r.deviceId, name: name ?? r.name, platform: r.platform, pairedAt: now, revoked: false } };
           });
           await store.put(`directory/${owner}/${r.deviceId}`, true);
         }
         return reply({ state: session.state, expiresAt: session.expiresAt, request: session.request ? { deviceId: session.request.deviceId, name: session.request.name, platform: session.request.platform } : null });
       }
       if (path === '/v1/devices/revoke' || path === '/v1/devices/update') {
-        const input = z.object({ deviceId: id, name: z.string().trim().min(1).max(80).optional(), group: z.string().max(80).optional() }).strict().parse(data);
+        const input = z.object({ deviceId: id, name: displayName.optional(), group: z.string().max(80).optional() }).strict().parse(data);
         await store.update<Device>(`devices/${owner}/${input.deviceId}`, current => {
           if (!current) throw new ApiError(404, 'DEVICE_NOT_FOUND');
           return { ...current, public: { ...current.public, ...(input.name ? { name: input.name } : {}), ...(input.group !== undefined ? { group: input.group } : {}), revoked: path.endsWith('revoke') || current.public.revoked } };

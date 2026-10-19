@@ -28,6 +28,40 @@ function setup() {
   return { request, store, advance: (ms: number) => { now += ms; } };
 }
 const device = { deviceId: 'phone1', name: 'Phone', platform: 'android', credential };
+test('aliases persist across telemetry and enrollment with owner isolation', async () => {
+  for (const platform of ['android', 'windows']) {
+    const { request, store, advance } = setup();
+    await request('/v1/devices/enroll-self', { ...device, platform }, 'alice');
+    await request('/v1/telemetry', { ownerUid: 'alice', deviceId: 'phone1', reading }, credential);
+    const before = await store.get<any>('devices/alice/phone1');
+    assert.equal((await request('/v1/devices/update', { deviceId: 'phone1', name: '  paIM 家 📱  ' }, 'alice')).status, 200);
+    assert.equal((await request('/v1/devices/update', { deviceId: 'phone1', name: 'Hacked' }, 'bob')).status, 404);
+    assert.equal((await request('/v1/devices/update', { deviceId: 'phone1', name: 'Hacked' })).status, 401);
+    for (const name of ['', '   ', 'x'.repeat(41), 'a\nb', 'a\u0000b']) {
+      assert.equal((await request('/v1/devices/update', { deviceId: 'phone1', name }, 'alice')).status, 400);
+    }
+    await request('/v1/devices/enroll-self', { ...device, platform }, 'alice');
+    advance(16000);
+    assert.equal((await request('/v1/telemetry', { ownerUid: 'alice', deviceId: 'phone1', reading: { ...reading, sequenceId: 2 } }, credential)).status, 200);
+    const after = await store.get<any>('devices/alice/phone1');
+    assert.equal(after.public.name, 'paIM 家 📱');
+    assert.equal(after.credentialHash, before.credentialHash);
+    assert.equal(after.public.deviceId, before.public.deviceId);
+    assert.equal(Object.keys(after.history).length, 2);
+    assert.equal([...store.records.keys()].filter(k => k.startsWith('devices/')).length, 1);
+  }
+});
+
+test('owner names Windows at approval; retries do not overwrite later alias', async () => {
+  const { request, store } = setup();
+  const { code } = (await request('/v1/pairing/create', {}, 'alice')).data;
+  await request('/v1/pairing/join', { ...device, platform: 'windows', code });
+  assert.equal((await request('/v1/pairing/approve', { code, name: 'Paim Windows' }, 'alice')).status, 200);
+  assert.equal((await store.get<any>('devices/alice/phone1')).public.name, 'Paim Windows');
+  await request('/v1/devices/update', { deviceId: 'phone1', name: 'Office' }, 'alice');
+  await request('/v1/pairing/approve', { code, name: 'Paim Windows' }, 'alice');
+  assert.equal((await store.get<any>('devices/alice/phone1')).public.name, 'Office');
+});
 const reading = { schemaVersion: 1, sequenceId: 1, observedAt: '2026-10-16T12:00:00Z', agentVersion: '0.2.0', battery: { percentage: 50, charging: false }, storage: { totalBytes: 100, availableBytes: 30 } };
 
 test('owner authentication is required', async () => {

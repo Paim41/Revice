@@ -36,8 +36,8 @@ void main() {
       expect(find.text('Second Android'), findsOneWidget);
       expect(find.text('Windows PC'), findsOneWidget);
       expect(find.text('This phone'), findsNothing);
-      expect(find.textContaining('53.00%'), findsNWidgets(2));
-      expect(find.textContaining('Storage 50.00% used'), findsNWidgets(2));
+      expect(find.textContaining('53%'), findsNWidgets(2));
+      expect(find.textContaining('Storage Used: 50%'), findsNWidgets(2));
       for (final card in tester.widgetList<Card>(find.byType(Card))) {
         expect(card.margin, deviceCardMargin);
       }
@@ -54,11 +54,11 @@ void main() {
       'latest': {'observedAt': '2020-01-01T00:00:00Z'},
     });
     expect(text, contains('Stale'));
-    expect(text, contains('Battery unavailable'));
-    expect(text, contains('Storage unavailable'));
+    expect(text, contains('Battery N/A'));
+    expect(text, contains('Storage N/A'));
     expect(
       deviceSummary({'platform': 'android'}),
-      contains('Awaiting first report'),
+      contains('Awaiting First Report'),
     );
   });
   test('Selected navigation uses lime for icon and label', () {

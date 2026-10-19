@@ -86,6 +86,10 @@ class MiniDashboard(private val context: Context, private val channel: MethodCha
                             for (i in 0 until oldRows.length()) {
                                 val row = oldRows.getJSONObject(i)
                                 if (!row.optBoolean("local")) newRows.put(row)
+                                else for (j in 0 until newRows.length()) {
+                                    val fresh = newRows.getJSONObject(j)
+                                    if (fresh.optBoolean("local")) fresh.put("name", row.optString("name", fresh.optString("name")))
+                                }
                             }
                         }
                         incoming.put("rows", newRows)
@@ -119,12 +123,12 @@ class MiniDashboard(private val context: Context, private val channel: MethodCha
     }
     private fun percent(row: JSONObject, key: String): String {
         val value = row.optDouble(key, Double.NaN)
-        return if (value.isFinite() && value in 0.0..100.0) String.format(Locale.US, "%.2f%%", value) else "N/A"
+        return if (value.isFinite() && value in 0.0..100.0) (if (key == "battery") String.format(Locale.US, "%.0f", value) else String.format(Locale.US, "%.1f", value).removeSuffix(".0")) + "%" else "N/A"
     }
     private fun observation(row: JSONObject): String {
         val timestamp = row.optLong("observed", 0)
         if (timestamp <= 0) return "No reading"
-        return "Observed " + SimpleDateFormat("dd MMM HH:mm", Locale.getDefault()).format(Date(timestamp))
+        return "Updated " + SimpleDateFormat("dd MMM yyyy, h:mm a", Locale.getDefault()).format(Date(timestamp))
     }
     private fun render() {
         val opts = options()
@@ -148,14 +152,14 @@ class MiniDashboard(private val context: Context, private val channel: MethodCha
             val name = row.optString("name", "Device").replace('\n', ' ').take(40)
             val platform = if (row.optString("platform") == "windows") "Windows" else "Android"
             val metrics = mutableListOf<String>()
-            if (opts.optBoolean("battery", true)) metrics.add("Battery ${percent(row, "battery")}" + if (row.optBoolean("charging")) " ⚡" else "")
-            if (opts.optBoolean("storage", true)) metrics.add("Storage ${percent(row, "storage")} used")
-            if (opts.optBoolean("updated", true)) metrics.add(observation(row))
-            "$name · $platform\n" + metrics.joinToString(" · ")
+            if (opts.optBoolean("battery", true)) metrics.add("Battery ${percent(row, "battery")}" + if (row.optBoolean("charging")) " | Charging" else "")
+            if (opts.optBoolean("storage", true)) metrics.add("Storage Used ${percent(row, "storage")}")
+            val time = if (opts.optBoolean("updated", true)) "\n" + observation(row) else ""
+            "$name | $platform\n" + metrics.joinToString(" | ") + time
         }
         val extra = if (selected.size > 4) "\n+${selected.size - 4} more devices" else ""
         val text = if (lines.isEmpty()) "No selected readings. Open Revice to configure devices." else lines.joinToString("\n\n") + extra
-        val title = "Revice · ${selected.size} Devices"
+        val title = "Revice | ${selected.size} Devices"
         val summary = lines.firstOrNull()?.replace('\n', ':') ?: "Mini Dashboard"
         // Absolute observation times remain truthful without a timer to refresh age labels.
         val fingerprint = opts.toString() + title + text
@@ -167,7 +171,7 @@ class MiniDashboard(private val context: Context, private val channel: MethodCha
         val notification = NotificationCompat.Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_revice_notification).setColor(Color.rgb(185,243,90))
             .setContentTitle(title).setContentText(summary)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(text).setSummaryText("Cached readings · open for current status"))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text).setSummaryText("Cached readings | open for current status"))
             .setContentIntent(destination("home")).addAction(0, "View Devices", destination("devices"))
             .setDeleteIntent(dismissed).setOnlyAlertOnce(true).setSilent(true).setShowWhen(false)
             .setOngoing(opts.optBoolean("ongoing", false)).setAutoCancel(false)

@@ -39,7 +39,7 @@ void main() {
     await tester.tap(find.text('Monitor this device'));
     await tester.pumpAndSettle();
     expect(saved, isTrue);
-    expect(find.text('73.00%'), findsOneWidget);
+    expect(find.text('73%'), findsOneWidget);
     expect(find.text('Test phone'), findsOneWidget);
     expect(find.text('Charging'), findsOneWidget);
     expect(tester.takeException(), isNull);

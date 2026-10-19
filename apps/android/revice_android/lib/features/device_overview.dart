@@ -5,17 +5,20 @@ import '../core/formatters.dart';
 import '../models/local_snapshot.dart';
 import '../services/cloud_service.dart';
 
+int? safeBytes(Object? value) =>
+    value is num && value.isFinite ? value.toInt() : null;
+
 const deviceCardMargin = EdgeInsets.only(bottom: 12);
 
 String deviceSummary(Map<String, dynamic> device, {DateTime? now}) {
-  final latest = device['latest'] as Map?;
-  final platform = device['platform']?.toString() ?? 'Device';
-  if (device['revoked'] == true) return '$platform • Revoked';
-  if (latest == null) return '$platform • Awaiting first report';
-  final battery = latest['battery'] as Map?;
-  final storage = latest['storage'] as Map?;
-  final total = (storage?['totalBytes'] as num?)?.toInt();
-  final available = (storage?['availableBytes'] as num?)?.toInt();
+  final latest = device['latest'] is Map ? device['latest'] as Map : null;
+  final platform = platformLabel(device['platform']);
+  if (device['revoked'] == true) return '$platform | Revoked';
+  if (latest == null) return '$platform | Awaiting First Report';
+  final battery = latest['battery'] is Map ? latest['battery'] as Map : null;
+  final storage = latest['storage'] is Map ? latest['storage'] as Map : null;
+  final total = safeBytes(storage?['totalBytes']);
+  final available = safeBytes(storage?['availableBytes']);
   final validStorage =
       total != null &&
       total > 0 &&
@@ -28,41 +31,65 @@ String deviceSummary(Map<String, dynamic> device, {DateTime? now}) {
       observed == null ||
       clock.difference(observed).inMinutes >= 5 ||
       observed.isAfter(clock.add(const Duration(minutes: 2)));
-  final charging = battery?['charging'] as bool?;
-  final batteryText = battery?['percentage'] == null
-      ? 'Battery unavailable'
-      : 'Battery ${formatPercentage(battery!['percentage'] as num)}';
+  final charging = battery?['charging'] is bool
+      ? battery!['charging'] as bool
+      : null;
+  final batteryText = battery?['percentage'] is! num
+      ? 'Battery N/A'
+      : 'Battery ${compactPercentage(battery!['percentage'] as num, battery: true)}';
   final storageText = validStorage
-      ? 'Storage ${formatPercentage(100 * (total - available) / total)} used\n${formatBytes(total - available)} / ${formatBytes(total)}'
-      : 'Storage unavailable';
-  return '$platform • ${stale ? 'Stale' : 'Recent'}\n$batteryText${charging == null
+      ? 'Storage Used: ${compactPercentage(100 * (total - available) / total)}\n${formatBytes(total - available)} / ${formatBytes(total)}'
+      : 'Storage N/A';
+  return '$platform | ${stale ? 'Stale' : 'Recent'}\n$batteryText${charging == null
       ? ''
       : charging
-      ? ' • Charging'
-      : ' • Not charging'}\n$storageText\nObserved ${observed?.toLocal().toString().split('.').first ?? 'Unknown time'}';
+      ? ' | Charging'
+      : ' | Not Charging'}\n$storageText\nLast Updated: ${friendlyTime(observed)}';
 }
 
-void showDeviceDetails(BuildContext context, Map<String, dynamic> device) {
+void showDeviceDetails(
+  BuildContext context,
+  Map<String, dynamic> device, {
+  CloudService? cloud,
+  String? deviceId,
+}) {
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (context) => SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              device['name']?.toString() ?? 'Device',
-              style: Theme.of(context).textTheme.headlineSmall,
+    builder: (context) => ListenableBuilder(
+      listenable: Listenable.merge([?cloud]),
+      builder: (context, _) {
+        final current = cloud == null ? device : cloud.devices[deviceId];
+        if (current == null) {
+          return const SafeArea(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Text('Device unavailable.'),
             ),
-            const SizedBox(height: 16),
-            Text(deviceSummary(device), style: const TextStyle(height: 1.7)),
-          ],
-        ),
-      ),
+          );
+        }
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  current['name']?.toString() ?? 'Device',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  deviceSummary(current),
+                  style: const TextStyle(height: 1.7),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     ),
   );
 }
@@ -81,12 +108,12 @@ class RegisteredOverview extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Other devices',
+            'Other Devices',
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           Text(
-            '${devices.length} registered • Android & Windows',
+            '${devices.length} registered | Android & Windows',
             style: const TextStyle(color: muted),
           ),
           const SizedBox(height: 16),
@@ -121,7 +148,12 @@ class RegisteredOverview extends StatelessWidget {
                     style: const TextStyle(height: 1.5),
                   ),
                 ),
-                onTap: () => showDeviceDetails(context, entry.value),
+                onTap: () => showDeviceDetails(
+                  context,
+                  entry.value,
+                  cloud: cloud,
+                  deviceId: entry.key,
+                ),
               ),
             ),
         ],

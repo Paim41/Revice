@@ -1,7 +1,7 @@
 name: revice_android
 description: Revice local Android monitoring foundation.
 publish_to: none
-version: 0.2.5+7
+version: 0.2.6+8
 environment:
   sdk: ^3.13.5
 dependencies:

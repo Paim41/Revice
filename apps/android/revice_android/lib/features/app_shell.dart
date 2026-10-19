@@ -1,3 +1,5 @@
+import '../core/formatters.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -69,7 +71,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: controller,
+    listenable: Listenable.merge([controller, widget.cloud]),
     builder: (context, _) {
       if (!controller.ready) {
         return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -206,10 +208,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
       style: TextStyle(fontSize: 30, fontWeight: FontWeight.w700),
     ),
     const SizedBox(height: 8),
-    const Text(
-      'This device • Live local readings',
-      style: TextStyle(color: muted),
-    ),
+    const Text('This Device | Local Readings', style: TextStyle(color: muted)),
     const SizedBox(height: 24),
     if (controller.snapshot case final snapshot?) ...[
       _deviceCard(snapshot),
@@ -239,7 +238,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                snapshot.model,
+                widget.cloud.localDisplayName(snapshot.model),
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
@@ -274,7 +273,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      snapshot.batteryLabel,
+                      compactPercentage(snapshot.percentage, battery: true),
                       style: TextStyle(
                         fontSize: snapshot.percentage == null ? 20 : 34,
                         fontWeight: FontWeight.w700,
@@ -297,20 +296,25 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
         const SizedBox(height: 24),
         Center(
           child: Text(
-            snapshot.chargingLabel,
+            snapshot.charging == null
+                ? 'Unknown'
+                : snapshot.charging!
+                ? 'Charging'
+                : 'Not Charging',
             style: const TextStyle(color: cyan),
           ),
         ),
         const SizedBox(height: 16),
         Text(
-          '${snapshot.isStale(DateTime.now()) ? 'Stale reading' : 'Local observation'} • ${_time(snapshot.observedAt)}',
+          '${snapshot.isStale(DateTime.now()) ? 'Stale Reading' : 'Local Observation'} | ${friendlyTime(snapshot.observedAt)}',
           style: const TextStyle(color: muted, fontSize: 12),
         ),
         const SizedBox(height: 4),
         TextButton(
           onPressed: () => Navigator.of(context).push(
             MaterialPageRoute<void>(
-              builder: (_) => DeviceDetails(controller: controller),
+              builder: (_) =>
+                  DeviceDetails(controller: controller, cloud: widget.cloud),
             ),
           ),
           child: const Text('View device details →'),
@@ -327,10 +331,18 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
           children: [
             Icon(Icons.storage_rounded, color: cyan),
             SizedBox(width: 12),
-            Text('Storage', style: TextStyle(fontSize: 18)),
+            Text('Storage Used', style: TextStyle(fontSize: 18)),
           ],
         ),
         const SizedBox(height: 20),
+        Text(
+          compactPercentage(
+            snapshot.storageFraction == null
+                ? null
+                : snapshot.storageFraction! * 100,
+          ),
+          style: const TextStyle(color: cyan),
+        ),
         Text(
           '${formatBytes(snapshot.usedBytes)} used',
           style: const TextStyle(fontSize: 25, fontWeight: FontWeight.w600),
@@ -499,11 +511,12 @@ class Panel extends StatelessWidget {
 }
 
 class DeviceDetails extends StatelessWidget {
-  const DeviceDetails({super.key, required this.controller});
+  const DeviceDetails({super.key, required this.controller, this.cloud});
+  final CloudService? cloud;
   final MonitoringController controller;
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: controller,
+    listenable: Listenable.merge([controller, ?cloud]),
     builder: (context, _) {
       final s = controller.snapshot;
       return Scaffold(
@@ -526,6 +539,10 @@ class DeviceDetails extends StatelessWidget {
                 child: Column(
                   children: [
                     for (final row in <(String, String)>[
+                      (
+                        'Device Name',
+                        cloud?.localDisplayName(s.model) ?? s.model,
+                      ),
                       ('Model', s.model),
                       ('Manufacturer', s.manufacturer),
                       ('Android', s.androidVersion),

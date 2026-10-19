@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { Alert, AlertKind } from './alerts.js';
 export const id = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
 export const secret = z.string().regex(/^[a-f0-9]{64}$/);
+export const displayName = z.string().refine(s => !/[\p{Cc}\p{Cf}]/u.test(s), 'Control characters are not allowed').transform(s => s.trim()).refine(s => [...s].length >= 1 && [...s].length <= 40, 'Use 1–40 characters');
 export const deviceInput = z.object({ deviceId: id, name: z.string().trim().min(1).max(80), platform: z.enum(['android', 'windows']), credential: secret }).strict();
 export const battery = z.object({
   percentage: z.number().min(0).max(100).nullable(), charging: z.boolean().nullable(),

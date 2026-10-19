@@ -12,6 +12,7 @@ import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
 import '../models/local_snapshot.dart';
+import '../core/formatters.dart';
 import 'background_monitoring.dart';
 
 class CloudService extends ChangeNotifier {
@@ -233,7 +234,23 @@ class CloudService extends ChangeNotifier {
     await _secure.write(key: 'credential', value: _credential);
   }
 
-  Future<void> enroll(LocalSnapshot snapshot) async {
+  String localDisplayName(String fallback) {
+    if (devicesOwnerUid != auth?.currentUser?.uid ||
+        ownerUid != devicesOwnerUid) {
+      return fallback;
+    }
+    final device = devices[deviceId];
+    return device?['name']?.toString() ?? fallback;
+  }
+
+  Future<void> renameDevice(String id, String name) async {
+    final error = deviceNameError(name);
+    if (error != null) throw StateError(error);
+    await call('/v1/devices/update', {'deviceId': id, 'name': name.trim()});
+    // Firebase remains authoritative and updates every subscribed screen.
+  }
+
+  Future<void> enroll(LocalSnapshot snapshot, {String? name}) async {
     final uid = auth?.currentUser?.uid;
     if (ownerUid != null && ownerUid != uid) {
       throw StateError(
@@ -244,7 +261,7 @@ class CloudService extends ChangeNotifier {
     final result = await call('/v1/devices/enroll-self', {
       'deviceId': deviceId,
       'credential': _credential,
-      'name': snapshot.model,
+      'name': (name ?? snapshot.model).trim(),
       'platform': 'android',
     });
     ownerUid = result['ownerUid'] as String;

@@ -5,6 +5,7 @@ import '../services/cloud_service.dart';
 import '../services/monitoring_controller.dart';
 import '../core/theme.dart';
 import 'device_overview.dart';
+import 'device_name_dialog.dart';
 
 class CloudScreen extends StatefulWidget {
   const CloudScreen({super.key, required this.cloud, required this.monitor});
@@ -176,9 +177,14 @@ class _CloudScreenState extends State<CloudScreen> {
                             widget.monitor.snapshot == null ||
                             cloud.ownerUid != null
                         ? null
-                        : () => action(
-                            () => cloud.enroll(widget.monitor.snapshot!),
-                            'This phone is registered.',
+                        : () => editDeviceName(
+                            context,
+                            initial: widget.monitor.snapshot!.model,
+                            title: 'Register This Phone',
+                            save: (name) => cloud.enroll(
+                              widget.monitor.snapshot!,
+                              name: name,
+                            ),
                           ),
                     child: Text(
                       cloud.ownerUid == null
@@ -235,17 +241,25 @@ class _CloudScreenState extends State<CloudScreen> {
                       FilledButton(
                         onPressed: busy
                             ? null
-                            : () => action(() async {
-                                await cloud.call('/v1/pairing/approve', {
-                                  'code': ownerCode,
-                                });
-                                if (mounted) {
-                                  setState(() {
-                                    ownerCode = null;
-                                    pairing = null;
+                            : () => editDeviceName(
+                                context,
+                                initial:
+                                    pairing?['request']?['name']?.toString() ??
+                                    'Device',
+                                title: 'Approve Device',
+                                save: (name) async {
+                                  await cloud.call('/v1/pairing/approve', {
+                                    'code': ownerCode,
+                                    'name': name,
                                   });
-                                }
-                              }, 'Device approved.'),
+                                  if (mounted) {
+                                    setState(() {
+                                      ownerCode = null;
+                                      pairing = null;
+                                    });
+                                  }
+                                },
+                              ),
                         child: const Text('Approve this device'),
                       ),
                     TextButton(
@@ -408,7 +422,21 @@ class CloudDevices extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 8, bottom: 8),
                   child: Text(deviceSummary(entry.value)),
                 ),
-                onTap: () => showDeviceDetails(context, entry.value),
+                onTap: () => showDeviceDetails(
+                  context,
+                  entry.value,
+                  cloud: cloud,
+                  deviceId: entry.key,
+                ),
+                leading: IconButton(
+                  tooltip: 'Rename Device',
+                  icon: const Icon(Icons.edit_outlined, color: cyan),
+                  onPressed: () => editDeviceName(
+                    context,
+                    initial: entry.value['name']?.toString() ?? 'Device',
+                    save: (name) => cloud.renameDevice(entry.key, name),
+                  ),
+                ),
                 trailing: entry.value['revoked'] == true
                     ? const Icon(Icons.block)
                     : IconButton(
