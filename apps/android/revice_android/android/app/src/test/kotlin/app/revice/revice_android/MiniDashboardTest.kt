@@ -101,4 +101,13 @@ class MiniDashboardTest {
         dashboard.acceptIntent(Intent().putExtra(MiniDashboard.TARGET,"private-token"));assertNull(call("takeNavigation"))
         dashboard.acceptIntent(Intent().putExtra(MiniDashboard.TARGET,"devices"));assertEquals("devices",call("takeNavigation"));assertNull(call("takeNavigation"))
     }
+    @Test fun iphoneUsesLocalOnlyStorageLabel() {
+        enable()
+        update("""{"owner":"owner","rows":[{"id":"iphone","name":"My iPhone","platform":"ios","battery":76,"storage":80}]}""")
+        val text = notification().extras.getCharSequence(Notification.EXTRA_BIG_TEXT).toString()
+        assertTrue(text.contains("My iPhone | iOS"))
+        assertTrue(text.contains("Battery 76%"))
+        assertTrue(text.contains("Storage: iPhone Only"))
+        assertFalse(text.contains("80%"))
+    }
 }

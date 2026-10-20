@@ -39,10 +39,20 @@ targets:
       base:
         GENERATE_INFOPLIST_FILE: YES
         PRODUCT_BUNDLE_IDENTIFIER: app.revice.ios-agent.tests
+  ReviceAgentUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [UITests]
+    dependencies:
+      - target: ReviceAgent
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: app.revice.ios-agent.uitests
 schemes:
   ReviceAgent:
     build:
       targets:
         ReviceAgent: all
     test:
-      targets: [ReviceAgentTests]
+      targets: [ReviceAgentTests, ReviceAgentUITests]

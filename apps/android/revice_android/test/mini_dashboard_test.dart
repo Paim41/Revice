@@ -25,6 +25,27 @@ class Auth extends Fake implements FirebaseAuth {
 }
 
 void main() {
+  test('iOS notification payload never carries storage values', () {
+    final payload = miniPayload(
+      owner: 'owner',
+      localId: null,
+      local: null,
+      devices: {
+        'iphone': {
+          'platform': 'ios',
+          'name': 'My iPhone',
+          'latest': {
+            'battery': {'percentage': 76, 'charging': true},
+            'storage': {'totalBytes': 100, 'availableBytes': 20},
+          },
+        },
+      },
+    );
+    final row = (payload['rows'] as List).single as Map;
+    expect(row['platform'], 'ios');
+    expect(row['storage'], isNull);
+    expect(row['battery'], 76);
+  });
   TestWidgetsFlutterBinding.ensureInitialized();
   const channel = MethodChannel('app.revice/mini_dashboard');
   final sample = LocalSnapshot(

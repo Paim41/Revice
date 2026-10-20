@@ -5,6 +5,20 @@ import 'package:revice_android/features/device_overview.dart';
 import 'package:revice_android/services/cloud_service.dart';
 
 void main() {
+  test('iPhone cloud cards identify iOS and never display disk metrics', () {
+    final text = deviceSummary({
+      'platform': 'ios',
+      'latest': {
+        'observedAt': DateTime.now().toUtc().toIso8601String(),
+        'battery': {'percentage': 76, 'charging': false},
+        'storage': {'totalBytes': 100, 'availableBytes': 20},
+      },
+    });
+    expect(text, contains('iOS | Recent'));
+    expect(text, contains('Battery 76% | Not Charging'));
+    expect(text, contains('Available on iPhone Only'));
+    expect(text, isNot(contains('80%')));
+  });
   testWidgets(
     'Overview includes Android and Windows, excludes this phone, and opens details',
     (tester) async {

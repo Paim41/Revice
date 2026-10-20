@@ -100,6 +100,7 @@ struct AgentHome: View {
                 ProgressView(value: storage.fraction).tint(Volt.cyan)
                 Text("\(bytes(storage.available)) Available / \(bytes(storage.total)) Total")
                 Text(String(format: "%.1f%% Used", storage.fraction * 100))
+                Text("Observed: \(time(model.storageObserved))").font(.footnote)
             } else { Text("Storage unavailable") }
             Text("Displayed only on this iPhone. Available capacity can differ from iPhone Settings. No storage readings are uploaded.").font(.footnote).foregroundStyle(Volt.secondary)
         }

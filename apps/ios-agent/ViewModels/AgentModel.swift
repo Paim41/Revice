@@ -8,6 +8,7 @@ import OSLog
     @Published private(set) var state = QueueState()
     @Published private(set) var battery = BatteryReading(level: -1, state: .unknown)
     @Published private(set) var storage: LocalStorageReading?
+    @Published private(set) var storageObserved: Date?
     @Published private(set) var observed: Date?
     @Published private(set) var busy = false
     @Published private(set) var ready = false
@@ -34,7 +35,7 @@ import OSLog
     }
     func refreshLocal(includeStorage: Bool = true) {
         battery = collector.read(); observed = Date()
-        if includeStorage { storage = StorageCollector().read() }
+        if includeStorage { storage = StorageCollector().read(); storageObserved = storage == nil ? nil : Date() }
     }
     func foreground() async {
         refreshLocal()
@@ -100,6 +101,7 @@ import OSLog
             guard !status.revoked else { throw AgentError.message("This device has been revoked.") }
             var named = identity; named.name = status.name
             try credentials.save(named); self.identity = named
+            state.pending.removeAll { $0.sequenceId < status.lastSequence }
             // Recover sequence allocation if app files were removed but Keychain survived.
             if state.pending.allSatisfy({ $0.sequenceId < status.lastSequence }) || state.nextSequence <= status.lastSequence {
                 state.pending.removeAll(); state.nextSequence = status.lastSequence + 1

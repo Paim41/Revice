@@ -46,6 +46,16 @@ jobs:
         run: |
           set -o pipefail
           xcodebuild test -project ReviceAgent.xcodeproj -scheme ReviceAgent -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -derivedDataPath build/DerivedData -resultBundlePath build/TestResults.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee build-test.log
+      - name: Capture simulator welcome screen
+        if: success()
+        working-directory: apps/ios-agent
+        run: |
+          xcrun simctl boot "$SIMULATOR_ID" || true
+          xcrun simctl bootstatus "$SIMULATOR_ID" -b
+          xcrun simctl install "$SIMULATOR_ID" build/DerivedData/Build/Products/Debug-iphonesimulator/ReviceAgent.app
+          xcrun simctl launch "$SIMULATOR_ID" app.revice.ios-agent
+          sleep 3
+          xcrun simctl io "$SIMULATOR_ID" screenshot build/welcome.png
       - name: Upload results (not an iPhone IPA)
         if: always()
         uses: actions/upload-artifact@v4
@@ -54,4 +64,5 @@ jobs:
           path: |
             apps/ios-agent/build-test.log
             apps/ios-agent/build/TestResults.xcresult
+            apps/ios-agent/build/welcome.png
           retention-days: 14
