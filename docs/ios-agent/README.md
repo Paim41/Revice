@@ -20,6 +20,7 @@ Registered `ios` devices are validated against a strict battery-only subtype on 
 - `ViewModels/`: pairing/sync/recovery orchestration and status.
 - `Resources/`: official existing Revice branding, Info.plist and privacy manifest.
 - `Tests/`: battery/null serialization, privacy boundary, queue limits/persistence, pairing, timeout/retry/revocation/cancellation tests.
+- `UITests/`: simulator navigation through welcome, pairing, settings and developer credits.
 - `project.yml`, `generate.sh`: reproducible XcodeGen 2.46.0 project and icon packaging.
 - `.github/workflows/ios-agent.yml`: macOS simulator compile/test pipeline and log artifacts.
 
@@ -70,3 +71,5 @@ Without suitable signing/build access, iPhone installation remains blocked. No s
 ## Physical-device acceptance still required
 
 Actual iPhone collectors, secure lock/unlock behavior, OS background scheduling, power impact, UI on small screens, Android-to-iPhone owner approval and real network recovery require device verification. Simulator unit tests use explicit injected test doubles and are not evidence of real hardware monitoring. Source contains no production mock telemetry. LAN sharing and signed distribution remain follow-up stages.
+
+See [validation and release notes](VALIDATION.md) for verified build results and artifact details.
