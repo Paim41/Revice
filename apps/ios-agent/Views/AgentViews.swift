@@ -40,7 +40,7 @@ struct AgentRoot: View {
                     else {
                         Text("Your iPhone. Connected.").font(.largeTitle.bold())
                         Text("Share battery status with your Revice owner dashboard. Storage stays on this iPhone. You control pairing; iOS controls background opportunities.")
-                        Button("Pair This iPhone") { pair = true }.buttonStyle(.borderedProminent)
+                        Button("Pair This iPhone") { pair = true }.buttonStyle(.borderedProminent).foregroundStyle(Volt.background)
                         if model.identity != nil { Button("Resume Pairing") { pair = true } }
                         AgentHome(model: model)
                     }
@@ -109,7 +109,7 @@ struct AgentHome: View {
             Text("Last Cloud Sync: \(time(model.state.lastSuccess))")
             Text("Last Local Observation: \(time(model.observed))")
             Text("Pending Observations: \(model.state.pending.count)")
-            Button("Sync Now") { Task { await model.sync() } }.buttonStyle(.borderedProminent).disabled(!model.paired || model.busy || !model.ready)
+            Button("Sync Now") { Task { await model.sync() } }.buttonStyle(.borderedProminent).foregroundStyle(Volt.background).disabled(!model.paired || model.busy || !model.ready)
             Button("Refresh Local Readings") { model.refreshLocal() }.disabled(model.busy)
         }
         Text("Automatic synchronization depends on iOS background scheduling. Keep Revice open for current updates; force-quitting can prevent background work.").font(.footnote).foregroundStyle(Volt.secondary)
