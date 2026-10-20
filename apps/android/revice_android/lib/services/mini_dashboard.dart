@@ -77,13 +77,19 @@ Map<String, dynamic> miniPayload({
         'id': entry.key,
         'local': false,
         'name': device['name']?.toString() ?? 'Device',
-        'platform': device['platform'] == 'windows' ? 'windows' : 'android',
+        'platform': ['windows', 'ios'].contains(device['platform'])
+            ? device['platform']
+            : 'android',
         'battery':
             percent is num && percent.isFinite && percent >= 0 && percent <= 100
             ? percent
             : null,
         'charging': battery['charging'] == true,
-        'storage': valid ? 100 * (total - available) / total : null,
+        'storage': device['platform'] == 'ios'
+            ? null
+            : valid
+            ? 100 * (total - available) / total
+            : null,
         'observed': DateTime.tryParse(latest['observedAt']?.toString() ?? '')
             ?.millisecondsSinceEpoch,
       });

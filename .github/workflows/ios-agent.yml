@@ -1,0 +1,57 @@
+name: iOS Agent
+on:
+  push:
+    paths: ['apps/ios-agent/**', '.github/workflows/ios-agent.yml']
+  pull_request:
+    paths: ['apps/ios-agent/**', '.github/workflows/ios-agent.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  simulator:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select stable runner Xcode
+        run: |
+          sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+          xcodebuild -version
+          if xcodebuild -version | grep -qi beta; then exit 1; fi
+      - name: Build pinned XcodeGen 2.46.0
+        run: |
+          git clone --depth 1 --branch 2.46.0 https://github.com/yonaskolb/XcodeGen.git "$RUNNER_TEMP/XcodeGen"
+          cd "$RUNNER_TEMP/XcodeGen"
+          swift build -c release --product xcodegen
+          echo "XCODEGEN=$RUNNER_TEMP/XcodeGen/.build/release/xcodegen" >> "$GITHUB_ENV"
+      - name: Generate project and resolve packages
+        working-directory: apps/ios-agent
+        run: |
+          bash generate.sh
+          xcodebuild -resolvePackageDependencies -project ReviceAgent.xcodeproj -scheme ReviceAgent
+      - name: Select available iPhone simulator
+        run: |
+          python3 - <<'PY'
+          import json,subprocess,os
+          data=json.loads(subprocess.check_output(['xcrun','simctl','list','devices','available','--json']))
+          candidates=[d for runtime,devices in data['devices'].items() if 'iOS' in runtime for d in devices if d['name'].startswith('iPhone')]
+          if not candidates: raise SystemExit('No iPhone simulator available')
+          with open(os.environ['GITHUB_ENV'],'a') as f: f.write('SIMULATOR_ID='+candidates[0]['udid']+'\n')
+          PY
+      - name: Build and test unsigned simulator application
+        working-directory: apps/ios-agent
+        run: |
+          set -o pipefail
+          xcodebuild test -project ReviceAgent.xcodeproj -scheme ReviceAgent -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -derivedDataPath build/DerivedData -resultBundlePath build/TestResults.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee build-test.log
+      - name: Upload results (not an iPhone IPA)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator-results
+          path: |
+            apps/ios-agent/build-test.log
+            apps/ios-agent/build/TestResults.xcresult
+          retention-days: 14

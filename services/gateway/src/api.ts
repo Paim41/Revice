@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ApiError, type Env, type Store } from './store.js';
-import { deviceInput, displayName, id, secret, telemetry, type Device, type Pairing } from './contracts.js';
+import { deviceInput, displayName, id, secret, telemetry, iosTelemetry, type Device, type Pairing } from './contracts.js';
 import { hash, ownerIdentity, randomCode, rateLimit, sameHash } from './security.js';
 import { evaluateAlerts } from './alerts.js';
 import { telegramOwner, telegramWebhook } from './telegram.js';
@@ -36,16 +36,32 @@ export function createApi(env: Env, dependencies: Dependencies) {
       const data = await body(request);
       if (path === '/v1/telegram/webhook') return reply(await telegramWebhook(request, data, store, env, now));
       const bearer = request.headers.get('authorization')?.match(/^Bearer (\S+)$/)?.[1];
-      const publicPairing = path === '/v1/pairing/join' || path === '/v1/pairing/status';
+      const publicPairing = path === '/v1/pairing/join' || path === '/v1/pairing/status' || path === '/v1/ios/identity';
       if (publicPairing) {
         const ip = request.headers.get('CF-Connecting-IP') ?? 'local';
         await rateLimit(store, await hash(`ip:${ip}`, env.AGENT_TOKEN_HASH_KEY), 10, now);
       }
       let owner = '';
-      if (!publicPairing && path !== '/v1/telemetry') {
+      if (!publicPairing && path !== '/v1/telemetry' && !path.startsWith('/v1/agent/')) {
         if (!bearer) throw new ApiError(401, 'OWNER_AUTH_REQUIRED');
         owner = await (dependencies.verifyOwner ?? ((t: string) => ownerIdentity(t, env.FIREBASE_PROJECT_ID)))(bearer);
         await rateLimit(store, await hash(`owner:${owner}`, env.AGENT_TOKEN_HASH_KEY), 60, now);
+      }
+      if (path === '/v1/ios/identity') {
+        z.object({}).strict().parse(data);
+        const randomHex = (size: number) => Array.from(crypto.getRandomValues(new Uint8Array(size)), b => b.toString(16).padStart(2, '0')).join('');
+        // No enrollment occurs until the existing owner-approved pairing flow completes.
+        return reply({ deviceId: randomHex(16), credential: randomHex(32) });
+      }
+      if (path === '/v1/agent/status' || path === '/v1/agent/unpair') {
+        const input = z.object({ ownerUid: id, deviceId: id }).strict().parse(data);
+        if (!bearer || !secret.safeParse(bearer).success) throw new ApiError(401, 'AGENT_AUTH_REQUIRED');
+        const credentialHash = await hash(bearer, env.AGENT_TOKEN_HASH_KEY);
+        const record = await store.update<Device>(`devices/${input.ownerUid}/${input.deviceId}`, current => {
+          if (!current || !sameHash(current.credentialHash, credentialHash) || current.public.revoked) throw new ApiError(401, 'AGENT_REVOKED_OR_INVALID');
+          return path.endsWith('unpair') ? { ...current, public: { ...current.public, revoked: true } } : current;
+        });
+        return reply({ name: record.public.name, lastSequence: record.lastSequence, revoked: record.public.revoked });
       }
       if (path === '/v1/devices/enroll-self') {
         const input = deviceInput.extend({ name: displayName }).parse(data);
@@ -138,6 +154,7 @@ export function createApi(env: Env, dependencies: Dependencies) {
         const digest = await hash(JSON.stringify(input.reading), env.AGENT_TOKEN_HASH_KEY);
         await store.update<Device>(`devices/${input.ownerUid}/${input.deviceId}`, current => {
           if (!current || current.public.revoked || !sameHash(current.credentialHash, credentialHash)) throw new ApiError(401, 'AGENT_REVOKED_OR_INVALID');
+          if (current.public.platform === 'ios') iosTelemetry.parse(input.reading);
           if (input.reading.sequenceId === current.lastSequence && current.lastDigest === digest) return current;
           if (input.reading.sequenceId <= current.lastSequence) throw new ApiError(409, 'SEQUENCE_REPLAY');
           if (current.public.latest && now - current.public.latest.receivedAt < 15000) throw new ApiError(429, 'REPORT_TOO_FREQUENT');
@@ -145,7 +162,14 @@ export function createApi(env: Env, dependencies: Dependencies) {
           const history = Object.fromEntries(Object.entries(current.history ?? {}).filter(([, value]) => now - Date.parse(value.observedAt) < 7 * 86400000).sort((a, b) => a[1].receivedAt - b[1].receivedAt).slice(-255));
           history[`s_${input.reading.sequenceId}`] = reading;
           const latest = !current.public.latest || observed >= Date.parse(current.public.latest.observedAt) ? reading : current.public.latest;
-          return evaluateAlerts({ ...current, lastSequence: input.reading.sequenceId, lastDigest: digest, history, public: { ...current.public, latest } }, now);
+          const evaluated = evaluateAlerts({ ...current, lastSequence: input.reading.sequenceId, lastDigest: digest, history, public: { ...current.public, latest } }, now);
+          if (current.public.platform === 'ios' && latest === reading && current.public.latest &&
+              latest.battery?.state !== current.public.latest.battery?.state && latest.battery?.state && now - observed < 300000) {
+            const eventId = `chargingState_${now}`;
+            evaluated.alerts ??= {};
+            evaluated.alerts[eventId] = { id: eventId, kind: 'chargingState', at: now, active: false, message: `${current.public.name}: Battery state ${latest.battery.state}` };
+          }
+          return evaluated;
         });
         return reply({ accepted: true });
       }

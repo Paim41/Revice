@@ -37,7 +37,9 @@ String deviceSummary(Map<String, dynamic> device, {DateTime? now}) {
   final batteryText = battery?['percentage'] is! num
       ? 'Battery N/A'
       : 'Battery ${compactPercentage(battery!['percentage'] as num, battery: true)}';
-  final storageText = validStorage
+  final storageText = device['platform'] == 'ios'
+      ? 'Storage: Available on iPhone Only'
+      : validStorage
       ? 'Storage Used: ${compactPercentage(100 * (total - available) / total)}\n${formatBytes(total - available)} / ${formatBytes(total)}'
       : 'Storage N/A';
   return '$platform | ${stale ? 'Stale' : 'Recent'}\n$batteryText${charging == null
@@ -113,7 +115,7 @@ class RegisteredOverview extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '${devices.length} registered | Android & Windows',
+            '${devices.length} registered | Android, Windows & iOS',
             style: const TextStyle(color: muted),
           ),
           const SizedBox(height: 16),
@@ -134,6 +136,8 @@ class RegisteredOverview extends StatelessWidget {
                 leading: Icon(
                   entry.value['platform'] == 'windows'
                       ? Icons.desktop_windows_rounded
+                      : entry.value['platform'] == 'ios'
+                      ? Icons.phone_iphone_rounded
                       : Icons.phone_android_rounded,
                   color: cyan,
                 ),

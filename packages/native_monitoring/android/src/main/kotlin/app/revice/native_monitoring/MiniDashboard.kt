@@ -150,10 +150,10 @@ class MiniDashboard(private val context: Context, private val channel: MethodCha
         }
         val lines = selected.take(4).map { row ->
             val name = row.optString("name", "Device").replace('\n', ' ').take(40)
-            val platform = if (row.optString("platform") == "windows") "Windows" else "Android"
+            val platform = when(row.optString("platform")) { "windows" -> "Windows"; "ios" -> "iOS"; else -> "Android" }
             val metrics = mutableListOf<String>()
             if (opts.optBoolean("battery", true)) metrics.add("Battery ${percent(row, "battery")}" + if (row.optBoolean("charging")) " | Charging" else "")
-            if (opts.optBoolean("storage", true)) metrics.add("Storage Used ${percent(row, "storage")}")
+            if (opts.optBoolean("storage", true)) metrics.add(if (platform == "iOS") "Storage: iPhone Only" else "Storage Used ${percent(row, "storage")}")
             val time = if (opts.optBoolean("updated", true)) "\n" + observation(row) else ""
             "$name | $platform\n" + metrics.joinToString(" | ") + time
         }

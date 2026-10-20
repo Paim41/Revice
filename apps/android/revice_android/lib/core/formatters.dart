@@ -13,6 +13,7 @@ String compactPercentage(num? value, {bool battery = false}) {
 String platformLabel(Object? value) => switch (value) {
   'windows' => 'Windows',
   'android' => 'Android',
+  'ios' => 'iOS',
   _ => 'Device',
 };
 

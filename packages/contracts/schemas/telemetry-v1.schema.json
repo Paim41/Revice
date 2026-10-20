@@ -55,6 +55,15 @@
                     "null"
                   ]
                 },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "charging",
+                    "unplugged",
+                    "full",
+                    "unknown"
+                  ]
+                },
                 "temperatureC": {
                   "anyOf": [
                     {

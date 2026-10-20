@@ -28,6 +28,33 @@ function setup() {
   return { request, store, advance: (ms: number) => { now += ms; } };
 }
 const device = { deviceId: 'phone1', name: 'Phone', platform: 'android', credential };
+test('iOS issued identity pairs, aliases sync, battery-only telemetry rejects disk data, and agent unpairs', async () => {
+  const { request, store, advance } = setup();
+  const issued = await request('/v1/ios/identity', {});
+  assert.equal(issued.status, 200);
+  assert.match(issued.data.deviceId, /^[a-f0-9]{32}$/); assert.match(issued.data.credential, /^[a-f0-9]{64}$/);
+  const { code } = (await request('/v1/pairing/create', {}, 'alice')).data;
+  await request('/v1/pairing/join', { ...issued.data, code, name: 'iPhone', platform: 'ios' });
+  assert.equal((await request('/v1/pairing/status', { code, credential: issued.data.credential })).data.state, 'requested');
+  await request('/v1/pairing/approve', { code, name: 'paIM iPhone' }, 'alice');
+  const ref = { ownerUid: 'alice', deviceId: issued.data.deviceId };
+  assert.equal((await request('/v1/agent/status', ref, issued.data.credential)).data.name, 'paIM iPhone');
+  assert.equal((await request('/v1/agent/status', { ...ref, ownerUid: 'bob' }, issued.data.credential)).status, 401);
+  const ios = { ...reading, storage: null, battery: { percentage: 10, charging: false, state: 'unplugged' } };
+  for (const value of [ { ...ios, storage: { totalBytes: 100, availableBytes: 20 } }, { ...ios, system: { ramTotalBytes: 100 } }, { ...ios, battery: { ...ios.battery, voltageMv: 100 } }, { ...ios, disk: 55 } ]) {
+    assert.equal((await request('/v1/telemetry', { ...ref, reading: value }, issued.data.credential)).status, 400);
+  }
+  assert.equal((await request('/v1/telemetry', { ...ref, reading: ios }, issued.data.credential)).status, 200);
+  assert.equal((await request('/v1/telemetry', { ...ref, reading: ios }, issued.data.credential)).status, 200);
+  advance(16000);
+  assert.equal((await request('/v1/telemetry', { ...ref, reading: { ...ios, sequenceId: 2, battery: { percentage: 11, charging: true, state: 'charging' } } }, issued.data.credential)).status, 200);
+  const record = await store.get<any>(`devices/alice/${issued.data.deviceId}`);
+  assert.equal(record.public.platform, 'ios'); assert.equal(record.public.latest.storage, null);
+  assert.ok(Object.values(record.alerts).some((a: any) => a.kind === 'chargingState'));
+  assert.ok(!JSON.stringify(record).includes('totalBytes'));
+  assert.equal((await request('/v1/agent/unpair', ref, issued.data.credential)).status, 200);
+  assert.equal((await request('/v1/telemetry', { ...ref, reading: { ...ios, sequenceId: 3 } }, issued.data.credential)).status, 401);
+});
 test('aliases persist across telemetry and enrollment with owner isolation', async () => {
   for (const platform of ['android', 'windows']) {
     const { request, store, advance } = setup();

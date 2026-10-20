@@ -25,3 +25,13 @@ packages/native_monitoring/example/
 **/*service-account*.json
 
 *.csproj.user
+
+# Generated Apple build products; no signing material belongs in Git.
+**/DerivedData/
+apps/ios-agent/ReviceAgent.xcodeproj/
+apps/ios-agent/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon.png
+*.xcuserstate
+**/xcuserdata/
+*.p12
+*.mobileprovision
+*.ipa
