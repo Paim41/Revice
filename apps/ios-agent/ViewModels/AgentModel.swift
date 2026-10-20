@@ -114,6 +114,12 @@ import OSLog
             state.lastSuccess = Date(); try queue.save(state)
             connection = "Synced"; return true
         } catch {
+            if case AgentError.server(409, "SEQUENCE_REPLAY") = error {
+                // Keychain can survive reinstall while queue files do not. A conflicting
+                // old sequence is not retriable; discard only that item, never claim success.
+                if !state.pending.isEmpty { state.pending.removeFirst() }
+                try? queue.save(state)
+            }
             if case AgentError.server(400, "TIMESTAMP_OUT_OF_RANGE") = error {
                 state.pending.removeAll(); try? queue.save(state)
             }

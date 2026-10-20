@@ -118,4 +118,15 @@ final class AgentTests: XCTestCase {
         let success = await model.sync(); XCTAssertFalse(success)
         XCTAssertNil(model.state.lastSuccess); XCTAssertEqual(model.state.pending.count, 1)
     }
+    @MainActor func testConflictingSequenceDoesNotPermanentlyBlockQueue() async {
+        let credentials = MemoryCredentials(), queue = MemoryQueue(), gateway = TestGateway()
+        credentials.value = AgentIdentity(deviceId: "id", credential: "secret", ownerUid: "owner", name: "Phone")
+        let model = AgentModel(credentials: credentials, queue: queue, gateway: gateway, collector: TestBattery())
+        gateway.error = AgentError.server(409, "SEQUENCE_REPLAY")
+        let rejected = await model.sync(); XCTAssertFalse(rejected)
+        XCTAssertNil(model.state.lastSuccess); XCTAssertTrue(model.state.pending.isEmpty)
+        gateway.error = nil
+        let recovered = await model.sync(); XCTAssertTrue(recovered)
+        XCTAssertEqual(gateway.uploads.first?.sequenceId, 1)
+    }
 }
